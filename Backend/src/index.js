@@ -12,11 +12,21 @@ const port = process.env.PORT;
 
 app.use(express.json());
 app.use(cookieParser());
+// app.use(
+//     cors({
+//         origin: "http://localhost:5173",
+//         credentials: true,
+//     })
+// );
+
+//temp
 app.use(
-    cors({
-        origin: "http://localhost:5173",
-        credentials: true,
-    })
+  cors({
+    origin: (origin, callback) => {
+      callback(null, true); // allow all origins
+    },
+    credentials: true, // works now
+  })
 );
 
 app.use("/api/health", (req, res) => {
@@ -38,4 +48,5 @@ server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
     connectDB();
 });
+
 
