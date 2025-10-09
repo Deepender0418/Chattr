@@ -10,13 +10,11 @@ const io = new Server(server, {
     //     origin: "http://localhost:5173", // React app URL
     // }
 
-    app.use(
       cors({
         origin: (origin, callback) => {
-        callback(null, true); // allow all origins
-        },
+            callback(null, true); // allow all origins
+        }
       })
-    );
 });
 
 export function getRecieverSocketId(userId) {
@@ -44,3 +42,4 @@ io.on("connection", (socket) => {
 
 
 export {io, app, server};
+
