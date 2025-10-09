@@ -6,7 +6,6 @@ import messageRoutes from './routes/message_route.js';
 import { connectDB } from './lib/db.js';
 import {app, server} from "./lib/socket.js";
 
-
 dotenv.config();
 
 const port = process.env.PORT;
@@ -24,5 +23,4 @@ app.use("/api/messages", messageRoutes);
 server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
     connectDB();
-
 });
