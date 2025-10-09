@@ -8,8 +8,8 @@ export const generateToken = (userId, res) => {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'Strict',//CSRF protection
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        secure: process.env.NODE_ENV==='production'
     });
 
     return token;
 }
+
