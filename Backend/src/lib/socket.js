@@ -6,18 +6,18 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-    // cors: {
-    //     origin: "http://localhost:5173", // React app URL
-    // }
-
     cors: {
-        origin: (origin, callback) => {
-            callback(null, true);
-        }
+        origin: "http://localhost:5173", // React app URL
     }
+
+    // cors: {
+    //     origin: (origin, callback) => {
+    //         callback(null, true);
+    //     }
+    // }
 });
 
-export default function getRecieverSocketId(userId) {
+export function getRecieverSocketId(userId) {
     return userSocketMap[userId];
 }
 
@@ -42,6 +42,7 @@ io.on("connection", (socket) => {
 
 
 export {io, app, server};
+
 
 
 
