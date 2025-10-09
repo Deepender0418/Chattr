@@ -1,5 +1,5 @@
-import User from "../models/user.model.js";
-import Message from "../models/message.model.js";
+import User from "../models/user_model.js";
+import Message from "../models/message_model.js";
 
 import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
@@ -71,3 +71,4 @@ export const sendMessage = async (req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
