@@ -6,11 +6,17 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-    cors: {
-        origin: "http://localhost:5173", // React app URL
-        // methods: ["GET", "POST"],
-        // credentials: true
-    }
+    // cors: {
+    //     origin: "http://localhost:5173", // React app URL
+    // }
+
+    app.use(
+      cors({
+        origin: (origin, callback) => {
+        callback(null, true); // allow all origins
+        },
+      })
+    );
 });
 
 export function getRecieverSocketId(userId) {
@@ -35,5 +41,6 @@ io.on("connection", (socket) => {
         io.emit("onlineUsers", Object.keys(userSocketMap));
     });
 });
+
 
 export {io, app, server};
