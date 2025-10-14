@@ -1,5 +1,5 @@
 import { useChatStore } from "../store/useChatStore";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
@@ -18,6 +18,7 @@ const ChatContainer = () => {
     } = useChatStore();
     const { authUser } = useAuthStore();
     const messageEndRef = useRef(null);
+    const messagesContainerRef = useRef(null);
 
     useEffect(() => {
         getMessages(selectedUser._id);
@@ -34,9 +35,9 @@ const ChatContainer = () => {
 
     if (isMessagesLoading) {
         return (
-            <div className="flex-1 flex flex-col overflow-auto bg-base-100">
+            <div className="flex flex-col h-full bg-base-100">
                 <ChatHeader />
-                <div className="flex-1 bg-base-200/30">
+                <div className="flex-1 overflow-hidden">
                     <MessageSkeleton />
                 </div>
                 <MessageInput />
@@ -45,26 +46,37 @@ const ChatContainer = () => {
     }
 
     return (
-        <div className="flex-1 flex flex-col overflow-auto bg-base-100">
+        <div className="flex flex-col h-full bg-base-100">
             <ChatHeader />
             
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-base-200/30">
+            {/* Messages container with proper scroll */}
+            <div 
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 lg:space-y-6 bg-base-200/10"
+            >
                 {messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-base-content/60">
-                        <div className="text-center space-y-2">
-                            <div className="text-4xl">👋</div>
-                            <p className="font-medium">Start a conversation</p>
-                            <p className="text-sm">Send your first message to {selectedUser.fullName}</p>
+                    <div className="flex flex-col items-center justify-center h-full text-base-content/60 px-4">
+                        <div className="text-center space-y-4 max-w-2xl">
+                            <div className="text-4xl lg:text-6xl">👋</div>
+                            <p className="font-bold text-2xl lg:text-3xl text-base-content/80">Start a conversation</p>
+                            <p className="text-base-content/60 text-lg lg:text-xl">
+                                Send your first message to {selectedUser.fullName}
+                            </p>
+                            <div className="pt-4 text-sm lg:text-base text-base-content/40 space-y-2">
+                                <p>💬 Send text messages with real-time delivery</p>
+                                <p>😊 Use emojis to express yourself</p>
+                                <p>🖼️ Share images and media files</p>
+                            </div>
                         </div>
                     </div>
                 ) : (
                     messages.map((message) => (
                         <div
                             key={message._id}
-                            className={`chat ${message.senderId === authUser._id ? "chat-end" : "chat-start"}`}
+                            className={`chat ${message.senderId === authUser._id ? "chat-end" : "chat-start"} w-full max-w-full`}
                         >
                             <div className="chat-image avatar">
-                                <div className="size-10 rounded-full border-2 border-base-300">
+                                <div className="size-10 lg:size-12 rounded-full overflow-hidden border border-base-300">
                                     <img
                                         src={
                                             message.senderId === authUser._id
@@ -72,20 +84,20 @@ const ChatContainer = () => {
                                                 : selectedUser.profilePic || "/avatar.png"
                                         }
                                         alt="profile pic"
-                                        className="object-cover"
+                                        className="w-full h-full object-cover"
                                     />
                                 </div>
                             </div>
-                            <div className="chat-header mb-1 flex items-center gap-2">
-                                <span className="text-xs font-medium">
+                            <div className="chat-header mb-2 flex items-center gap-3">
+                                <span className="text-sm lg:text-base font-semibold">
                                     {message.senderId === authUser._id ? "You" : selectedUser.fullName}
                                 </span>
-                                <time className="text-xs opacity-50">
+                                <time className="text-xs lg:text-sm opacity-60">
                                     {formatMessageTime(message.createdAt)}
                                 </time>
                             </div>
                             <div 
-                                className={`chat-bubble flex flex-col ${
+                                className={`chat-bubble flex flex-col max-w-lg lg:max-w-2xl ${
                                     message.senderId === authUser._id 
                                         ? "bg-primary text-primary-content" 
                                         : "bg-base-300 text-base-content"
@@ -95,10 +107,14 @@ const ChatContainer = () => {
                                     <img
                                         src={message.image}
                                         alt="Attachment"
-                                        className="max-w-[200px] rounded-md mb-2"
+                                        className="max-w-full lg:max-w-md rounded mb-3"
                                     />
                                 )}
-                                {message.text && <p className="whitespace-pre-wrap">{message.text}</p>}
+                                {message.text && (
+                                    <p className="whitespace-pre-wrap text-base lg:text-lg leading-relaxed">
+                                        {message.text}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     ))
