@@ -30,10 +30,12 @@ const MessageInput = () => {
         }
 
         const reader = new FileReader();
-        reader.onloadend = () => {
-            setImagePreview(reader.result);
-        };
         reader.readAsDataURL(file);
+
+        reader.onload = async () => {
+            const base64Image = reader.result;
+            setImagePreview(base64Image);
+        };
     };
 
     const removeImage = () => {
@@ -43,7 +45,6 @@ const MessageInput = () => {
 
     const handleEmojiClick = (emojiData) => {
         setText(prevText => prevText + emojiData.emoji);
-        // Keep focus on input after adding emoji
         if (inputRef.current) {
             inputRef.current.focus();
         }
@@ -69,10 +70,9 @@ const MessageInput = () => {
         }
     };
 
-    // Close emoji picker when clicking outside - SIMPLIFIED VERSION
+    // Close emoji picker when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
-            // If click is outside both emoji picker and emoji button, close picker
             if (
                 emojiPickerRef.current && 
                 !emojiPickerRef.current.contains(event.target) &&
@@ -106,25 +106,24 @@ const MessageInput = () => {
     }, []);
 
     return (
-        <div className="p-4 w-full bg-base-100 border-t border-base-300">
+        <div className="p-3 sm:p-4 w-full bg-base-100 border-t border-base-300">
             {imagePreview && (
                 <div className="mb-3 flex items-center gap-2">
                     <div className="relative">
                         <img
                             src={imagePreview}
                             alt="Preview"
-                            className="w-20 h-20 object-cover rounded-lg border-2 border-base-300"
+                            className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border-2 border-base-300"
                         />
                         <button
                             onClick={removeImage}
-                            className="absolute -top-2 -right-2 size-6 rounded-full bg-error text-error-content
-                            flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                            className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 size-5 sm:size-6 rounded-full bg-error text-error-content flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
                             type="button"
                         >
                             <X className="size-3" />
                         </button>
                     </div>
-                    <span className="text-sm text-base-content/60">Image ready to send</span>
+                    <span className="text-xs sm:text-sm text-base-content/60">Image ready to send</span>
                 </div>
             )}
 
@@ -137,8 +136,8 @@ const MessageInput = () => {
                         <div className="bg-base-100 rounded-xl shadow-2xl border border-base-300 overflow-hidden">
                             <EmojiPicker 
                                 onEmojiClick={handleEmojiClick}
-                                width={350}
-                                height={400}
+                                width={300}
+                                height={350}
                                 searchDisabled={false}
                                 skinTonesDisabled
                                 previewConfig={{
@@ -150,25 +149,25 @@ const MessageInput = () => {
                     </div>
                 )}
 
-                <form onSubmit={handleSendMessage} className="flex items-center gap-3">
-                    <div className="flex-1 flex gap-2">
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex-1 flex gap-1 sm:gap-2">
                         <button
                             type="button"
                             ref={emojiButtonRef}
-                            className={`btn btn-circle btn-sm flex items-center justify-center ${
+                            className={`btn btn-circle btn-xs sm:btn-sm flex items-center justify-center ${
                                 showEmojiPicker 
                                     ? "btn-primary text-primary-content" 
                                     : "btn-ghost text-base-content/70 hover:text-base-content hover:bg-base-300"
                             }`}
                             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                         >
-                            <Smile className="size-5" />
+                            <Smile className="size-4 sm:size-5" />
                         </button>
 
                         <input
                             ref={inputRef}
                             type="text"
-                            className="flex-1 input input-bordered rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                            className="flex-1 input input-bordered input-sm sm:input-md rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary"
                             placeholder="Type a message..."
                             value={text}
                             onChange={(e) => setText(e.target.value)}
@@ -185,23 +184,23 @@ const MessageInput = () => {
 
                         <button
                             type="button"
-                            className={`btn btn-circle btn-sm flex items-center justify-center ${
+                            className={`btn btn-circle btn-xs sm:btn-sm flex items-center justify-center ${
                                 imagePreview 
                                     ? "btn-primary text-primary-content" 
                                     : "btn-ghost text-base-content/70 hover:text-base-content hover:bg-base-300"
                             }`}
                             onClick={() => fileInputRef.current?.click()}
                         >
-                            <Image className="size-5" />
+                            <Image className="size-4 sm:size-5" />
                         </button>
                     </div>
                     
                     <button
                         type="submit"
-                        className="btn btn-circle btn-primary shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:bg-base-300 disabled:text-base-content/40 disabled:scale-100 disabled:shadow-none"
+                        className="btn btn-circle btn-primary btn-sm sm:btn-md shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:bg-base-300 disabled:text-base-content/40 disabled:scale-100 disabled:shadow-none"
                         disabled={!text.trim() && !imagePreview}
                     >
-                        <Send className="size-5" />
+                        <Send className="size-4 sm:size-5" />
                     </button>
                 </form>
             </div>
