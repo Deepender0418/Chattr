@@ -1,48 +1,52 @@
-import { MessageSquare, Users } from "lucide-react";
+import { MessageSquare, Users, Sparkles } from "lucide-react";
 
 const NoChatSelected = () => {
     return (
-        <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-base-100 to-base-200">
-            <div className="max-w-md text-center space-y-6">
+        <div className="flex flex-col items-center justify-center h-full p-6 lg:p-12 bg-gradient-to-br from-base-100 via-base-100 to-base-200/10">
+            <div className="max-w-4xl text-center space-y-8">
                 {/* Animated Icon */}
                 <div className="flex justify-center">
                     <div className="relative">
-                        <div className="size-20 rounded-2xl bg-primary/10 flex items-center justify-center animate-pulse">
-                            <MessageSquare className="size-8 text-primary" />
+                        <div className="size-20 lg:size-28 bg-primary/10 flex items-center justify-center animate-pulse">
+                            <MessageSquare className="size-8 lg:size-12 text-primary" />
                         </div>
-                        <div className="absolute -top-2 -right-2 size-8 bg-secondary rounded-full flex items-center justify-center shadow-lg">
-                            <Users className="size-4 text-secondary-content" />
+                        <div className="absolute -top-3 -right-3 size-12 lg:size-16 bg-secondary rounded-full flex items-center justify-center shadow-xl">
+                            <Users className="size-4 lg:size-6 text-secondary-content" />
                         </div>
                     </div>
                 </div>
 
                 {/* Welcome Text */}
-                <div className="space-y-3">
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                <div className="space-y-4">
+                    <h2 className="text-3xl lg:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                         Welcome to Chattr!
                     </h2>
-                    <p className="text-base-content/70 text-lg">
-                        Select a conversation from the sidebar to start chatting
+                    <p className="text-base-content/70 text-lg lg:text-2xl leading-relaxed">
+                        Select a conversation to start chatting with your friends and colleagues
                     </p>
                 </div>
 
-                {/* Features List */}
-                <div className="grid grid-cols-2 gap-4 pt-4">
-                    <div className="text-center p-3 bg-base-200 rounded-lg">
-                        <div className="text-2xl mb-1">😊</div>
-                        <p className="text-sm font-medium">Emoji Support</p>
+                {/* Features Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 pt-8">
+                    <div className="text-center p-4 lg:p-6 bg-base-200 border border-base-300 hover:shadow transition-shadow duration-300">
+                        <div className="text-3xl lg:text-4xl mb-3">😊</div>
+                        <p className="text-sm lg:text-base font-semibold">Emoji Support</p>
+                        <p className="text-xs lg:text-sm text-base-content/60 mt-1">Express with emojis</p>
                     </div>
-                    <div className="text-center p-3 bg-base-200 rounded-lg">
-                        <div className="text-2xl mb-1">🖼️</div>
-                        <p className="text-sm font-medium">Image Sharing</p>
+                    <div className="text-center p-4 lg:p-6 bg-base-200 border border-base-300 hover:shadow transition-shadow duration-300">
+                        <div className="text-3xl lg:text-4xl mb-3">🖼️</div>
+                        <p className="text-sm lg:text-base font-semibold">Image Sharing</p>
+                        <p className="text-xs lg:text-sm text-base-content/60 mt-1">Share photos & media</p>
                     </div>
-                    <div className="text-center p-3 bg-base-200 rounded-lg">
-                        <div className="text-2xl mb-1">⚡</div>
-                        <p className="text-sm font-medium">Real-time</p>
+                    <div className="text-center p-4 lg:p-6 bg-base-200 border border-base-300 hover:shadow transition-shadow duration-300">
+                        <div className="text-3xl lg:text-4xl mb-3">⚡</div>
+                        <p className="text-sm lg:text-base font-semibold">Real-time</p>
+                        <p className="text-xs lg:text-sm text-base-content/60 mt-1">Instant messaging</p>
                     </div>
-                    <div className="text-center p-3 bg-base-200 rounded-lg">
-                        <div className="text-2xl mb-1">👥</div>
-                        <p className="text-sm font-medium">Online Status</p>
+                    <div className="text-center p-4 lg:p-6 bg-base-200 border border-base-300 hover:shadow transition-shadow duration-300">
+                        <div className="text-3xl lg:text-4xl mb-3">👥</div>
+                        <p className="text-sm lg:text-base font-semibold">Online Status</p>
+                        <p className="text-xs lg:text-sm text-base-content/60 mt-1">See who's online</p>
                     </div>
                 </div>
             </div>
