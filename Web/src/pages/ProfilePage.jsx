@@ -102,7 +102,7 @@ const ProfilePage = () => {
                                 <h2 className="text-xl font-bold text-center">{authUser?.fullName}</h2>
                                 <p className="text-base-content/60 flex items-center gap-1">
                                     <AtSign className="size-4" />
-                                    @{authUser?.userName}
+                                    {authUser?.userName}
                                 </p>
                                 
                                 <div className="mt-4 w-full">
