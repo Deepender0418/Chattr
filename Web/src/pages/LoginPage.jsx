@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import AuthImagePattern from "../components/AuthImagePattern";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare, User } from "lucide-react";
 
@@ -19,24 +18,16 @@ const LoginPage = () => {
 
     return (
         <div className="min-h-screen relative overflow-hidden">
-            {/* Background Pattern - Faded */}
-            <div className="absolute inset-0 z-0 opacity-20 lg:opacity-30">
-                <AuthImagePattern
-                    title="Welcome back!"
-                    subtitle="Sign in to continue your conversations and catch up with your messages."
-                />
-            </div>
-
             {/* Login Form - Centered */}
             <div className="relative z-10 flex flex-col justify-center items-center min-h-screen p-6 sm:p-8">
                 <div className="w-full max-w-md">
-                    {/* Glassmorphism Card */}
-                    <div className="bg-base-100/80 backdrop-blur-lg rounded-2xl shadow-xl border border-base-300/50 p-8">
+                    {/* Glassmorphism Card - No rounded edges */}
+                    <div className="bg-base-100/80 backdrop-blur-lg shadow-xl border border-base-300/50 p-8">
                         {/* Logo */}
                         <div className="text-center mb-8">
                             <div className="flex flex-col items-center gap-2 group">
                                 <div
-                                    className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center 
+                                    className="size-16 bg-primary/10 flex items-center justify-center 
                                 group-hover:bg-primary/20 transition-all duration-300 shadow-lg"
                                 >
                                     <MessageSquare className="size-7 text-primary" />
@@ -62,7 +53,7 @@ const LoginPage = () => {
                                     </div>
                                     <input
                                         type="text"
-                                        className="input input-bordered w-full pl-10 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
+                                        className="input input-bordered w-full pl-10 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
                                         placeholder="Macku"
                                         value={formData.userName}
                                         onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
@@ -80,7 +71,7 @@ const LoginPage = () => {
                                     </div>
                                     <input
                                         type={showPassword ? "text" : "password"}
-                                        className="input input-bordered w-full pl-10 pr-10 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
+                                        className="input input-bordered w-full pl-10 pr-10 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
                                         placeholder="••••••••"
                                         value={formData.password}
                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -101,7 +92,7 @@ const LoginPage = () => {
 
                             <button 
                                 type="submit" 
-                                className="btn btn-primary w-full rounded-lg py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                                className="btn btn-primary w-full py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
                                 disabled={isLoggingIn}
                             >
                                 {isLoggingIn ? (
