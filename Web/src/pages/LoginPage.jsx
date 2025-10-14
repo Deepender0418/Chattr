@@ -36,7 +36,7 @@ const LoginPage = () => {
                                     Welcome Back
                                 </h1>
                                 <p className="text-base-content/70 text-lg mt-2">
-                                    Sign in to your account
+                                    Log in to your account
                                 </p>
                             </div>
                         </div>
@@ -98,10 +98,10 @@ const LoginPage = () => {
                                 {isLoggingIn ? (
                                     <>
                                         <Loader2 className="size-5 animate-spin" />
-                                        Signing In...
+                                        Logging In...
                                     </>
                                 ) : (
-                                    "Sign in"
+                                    "Log in"
                                 )}
                             </button>
                         </form>
