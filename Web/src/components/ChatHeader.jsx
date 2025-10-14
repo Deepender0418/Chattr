@@ -149,9 +149,9 @@ const ChatHeader = () => {
                             >
                                 Close
                             </button>
-                            <button className="btn btn-primary flex-1">
+                            {/* <button className="btn btn-primary flex-1">
                                 Start Call
-                            </button>
+                            </button> */}
                         </div>
                     </div>
                 </div>
