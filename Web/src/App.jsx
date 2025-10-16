@@ -20,10 +20,9 @@ const App = () => {
       hasCheckedAuth.current = true;
       checkAuth();
     }
-  }, [checkAuth]);
+  }, []);
 
-  // Show loading only on initial auth check when we don't have user data
-  if (isCheckingAuth && !authUser && !hasCheckedAuth.current) {
+  if (isCheckingAuth && !authUser) {
     return (
       <div className="flex flex-col items-center justify-center h-screen space-y-4">
         <Loader className="size-12 animate-spin text-primary" />
@@ -38,12 +37,14 @@ const App = () => {
   return (
     <div data-theme={theme}>
       <Navbar />
+
       <Routes>
         <Route path="/" element={authUser ? <HomePage /> : <Navigate to="/login" />} />
         <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to="/" />} />
         <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
         <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
       </Routes>
+
       <Toaster />
     </div>
   );
