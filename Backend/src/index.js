@@ -32,10 +32,10 @@ app.use("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 
-app.use(express.static(path.join(__dirname, ".././Web/dist")));
+app.use(express.static(path.join(__dirname, "../Web/dist")));
 
 app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, ".././Web", "dist", "index.html"));
+    res.sendFile(path.join(__dirname, "../Web/dist/index.html"));
 });
 
 server.listen(PORT, () => {
