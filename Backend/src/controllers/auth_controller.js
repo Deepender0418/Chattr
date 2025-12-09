@@ -5,12 +5,13 @@ import cloudinary from "../lib/cloudinary.js";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 
-
 const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp-relay.brevo.com",
+    port: 587,
+    secure: false,
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: process.env.BREVO_SMTP_USER,
+        pass: process.env.BREVO_SMTP_KEY,
     },
 });
 
@@ -57,27 +58,24 @@ export const signup = async (req, res) => {
             email,
             password: hashedPassword,
             verificationToken: hashedVerificationToken,
-            verificationTokenExpires: Date.now() + 30 * 60 * 1000, // 30 mins
+            verificationTokenExpires: Date.now() + 30 * 60 * 1000,
         });
 
         await newUser.save();
 
-        console.log("saved user!!!");
-        
         const verifyURL = `${process.env.FRONTENDURL}/verify-email/${verificationToken}`;
 
-        console.log(verifyURL);
-        
         try {
             await transporter.sendMail({
-                from: process.env.EMAIL_USER,
+                from: process.env.SENDER_EMAIL,
                 to: newUser.email,
                 subject: "Verify Your Email",
                 html: `
                     <h2>Welcome, ${newUser.fullName}!</h2>
                     <p>Click below to verify your email:</p>
-                    <a href="${verifyURL}" target="_blank">${verifyURL}</a>
+                    <a href="${verifyURL}" target="_blank">Verify Email</a>
                     <p>This link expires in <b>30 minutes</b>.</p>
+                    <p><small>If the button doesn't work, copy and paste this URL:</small><br>${verifyURL}</p>
                 `,
             });
         } catch (err) {
@@ -204,13 +202,16 @@ export const forgotPassword = async (req, res) => {
         const resetURL = `${process.env.FRONTENDURL}/reset-password/${resetToken}`;
 
         await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+            from: process.env.SENDER_EMAIL,
             to: user.email,
             subject: "Password Reset Request",
             html: `
                 <h2>Password Reset Link</h2>
-                <a href="${resetURL}" target="_blank">${resetURL}</a>
+                <p>Click the link below to reset your password:</p>
+                <a href="${resetURL}" target="_blank" style="padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
+                <p><small>Or copy and paste this URL into your browser:</small><br>${resetURL}</p>
                 <p>This link expires in <b>15 minutes</b>.</p>
+                <p><em>If you didn't request this, please ignore this email.</em></p>
             `,
         });
 
