@@ -61,8 +61,6 @@ export const signup = async (req, res) => {
             verificationTokenExpires: Date.now() + 30 * 60 * 1000,
         });
 
-        await newUser.save();
-
         const verifyURL = `${process.env.FRONTENDURL}/verify-email/${verificationToken}`;
 
         try {
@@ -87,6 +85,8 @@ export const signup = async (req, res) => {
                 message: "Account created but failed to send verification email. Try again.",
             });
         }
+
+        await newUser.save();
 
         res.status(201).json({
             message: "Account created. Please check your email to verify your account.",
