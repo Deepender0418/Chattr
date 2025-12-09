@@ -3,17 +3,18 @@ import User from "../models/user_model.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
+// import nodemailer from "nodemailer";
+import { sendEmail } from "../lib/brevoEmail.js"; // Add this line
 
-const transporter = nodemailer.createTransport({
-    host: "smtp-relay.brevo.com",
-    port: 587,
-    secure: true,
-    auth: {
-        user: process.env.BREVO_SMTP_USER,
-        pass: process.env.BREVO_SMTP_KEY,
-    },
-});
+// const transporter = nodemailer.createTransport({
+//     host: "smtp-relay.brevo.com",
+//     port: 587,
+//     secure: true,
+//     auth: {
+//         user: process.env.BREVO_SMTP_USER,
+//         pass: process.env.BREVO_SMTP_KEY,
+//     },
+// });
 
 export const signup = async (req, res) => {
     const { fullName, userName, email, password } = req.body;
@@ -64,18 +65,18 @@ export const signup = async (req, res) => {
         const verifyURL = `${process.env.FRONTENDURL}/verify-email/${verificationToken}`;
 
         try {
-            await transporter.sendMail({
-                from: process.env.SENDER_EMAIL,
-                to: newUser.email,
-                subject: "Verify Your Email",
-                html: `
+            await sendEmail({
+                toEmail: newUser.email,
+                toName: newUser.fullName,
+                subject: 'Verify Your Email',
+                htmlContent: `
                     <h2>Welcome, ${newUser.fullName}!</h2>
                     <p>Click below to verify your email:</p>
-                    <a href="${verifyURL}" target="_blank">Verify Email</a>
+                    <a href="${verifyURL}" target="_blank" style="padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; display: inline-block;">Verify Email</a>
+                    <p><small>Or copy and paste this URL:</small><br><code>${verifyURL}</code></p>
                     <p>This link expires in <b>30 minutes</b>.</p>
-                    <p><small>If the button doesn't work, copy and paste this URL:</small><br>${verifyURL}</p>
-                `,
-            });
+                `
+            }); 
         } catch (err) {
             newUser.verificationToken = undefined;
             newUser.verificationTokenExpires = undefined;
