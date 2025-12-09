@@ -25,6 +25,19 @@ const userSchema = new mongoose.Schema(
             type: String,
             default: "https://i.pinimg.com/1200x/56/af/7e/56af7ed2c15a58fed21e8ffd0744bb1e.jpg",
         },
+        resetPasswordToken: { 
+            type: String 
+        },
+        resetPasswordExpires: { 
+            type: Date 
+        },
+        isVerified: {
+            type: Boolean,
+            default: false,
+        },
+        verificationToken: String,
+        verificationTokenExpires: Date,
+
     },
     { timestamps: true }
 );
