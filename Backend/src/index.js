@@ -20,6 +20,7 @@ app.use(
     cors({
         origin: FrontURL,
         credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
         allowedHeaders: ["Content-Type", "Authorization"]
     })
 );
