@@ -3,18 +3,7 @@ import User from "../models/user_model.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
 import crypto from "crypto";
-// import nodemailer from "nodemailer";
-import { sendEmail } from "../lib/brevoEmail.js"; // Add this line
-
-// const transporter = nodemailer.createTransport({
-//     host: "smtp-relay.brevo.com",
-//     port: 587,
-//     secure: true,
-//     auth: {
-//         user: process.env.BREVO_SMTP_USER,
-//         pass: process.env.BREVO_SMTP_KEY,
-//     },
-// });
+import { sendEmail } from "../lib/brevoEmail.js";
 
 export const signup = async (req, res) => {
     const { fullName, userName, email, password } = req.body;
@@ -202,18 +191,17 @@ export const forgotPassword = async (req, res) => {
 
         const resetURL = `${process.env.FRONTENDURL}/reset-password/${resetToken}`;
 
-        await transporter.sendMail({
-            from: process.env.SENDER_EMAIL,
-            to: user.email,
+        await sendEmail({
+            toEmail: user.email,
+            toName: user.fullName || '',
             subject: "Password Reset Request",
-            html: `
+            htmlContent: `
                 <h2>Password Reset Link</h2>
                 <p>Click the link below to reset your password:</p>
                 <a href="${resetURL}" target="_blank" style="padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
                 <p><small>Or copy and paste this URL into your browser:</small><br>${resetURL}</p>
                 <p>This link expires in <b>15 minutes</b>.</p>
-                <p><em>If you didn't request this, please ignore this email.</em></p>
-            `,
+                <p><em>If you didn't request this, please ignore this email.</em></p>`
         });
 
         res.json({ message: "Password reset link sent to your email" });
