@@ -62,8 +62,12 @@ export const signup = async (req, res) => {
 
         await newUser.save();
 
+        console.log("saved user!!!");
+        
         const verifyURL = `${process.env.FRONTENDURL}/verify-email/${verificationToken}`;
 
+        console.log(verifyURL);
+        
         try {
             await transporter.sendMail({
                 from: process.env.EMAIL_USER,
