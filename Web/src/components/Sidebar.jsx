@@ -1,18 +1,31 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
+import { useFriendStore } from "../store/useFriendStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
-import { Users, Radio, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Radio, Search, ChevronLeft, ChevronRight, UserPlus, Copy, CheckCircle } from "lucide-react";
+import toast from "react-hot-toast";
 
 const Sidebar = ({ onExpandChange, isExpanded }) => {
     const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading } = useChatStore();
-    const { onlineUsers } = useAuthStore();
+    const { onlineUsers, authUser } = useAuthStore();
+    const {
+        fetchRequests,
+        requests,
+        respondRequest,
+        searchUser,
+        searchResult,
+        isSearching,
+        sendRequest,
+    } = useFriendStore();
     const [showOnlineOnly, setShowOnlineOnly] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const [friendQuery, setFriendQuery] = useState("");
 
     useEffect(() => {
         getUsers();
-    }, [getUsers]);
+        fetchRequests();
+    }, [getUsers, fetchRequests]);
 
     const filteredUsers = (showOnlineOnly
         ? users.filter((user) => onlineUsers.includes(user._id))
@@ -32,6 +45,31 @@ const Sidebar = ({ onExpandChange, isExpanded }) => {
 
     const handleExpandToggle = () => {
         onExpandChange(!isExpanded);
+    };
+
+    const handleFriendSearch = async () => {
+        if (!friendQuery.trim()) {
+            toast.error("Enter a username or friend code");
+            return;
+        }
+        await searchUser(friendQuery.trim());
+    };
+
+    const handleSendRequest = async (target) => {
+        await sendRequest(target);
+        fetchRequests();
+    };
+
+    const handleRespond = async (id, action) => {
+        await respondRequest(id, action);
+        fetchRequests();
+        getUsers();
+    };
+
+    const handleCopyCode = async () => {
+        if (!authUser?.friendCode) return;
+        await navigator.clipboard.writeText(authUser.friendCode);
+        toast.success("Friend code copied");
     };
 
     if (isUsersLoading) return <SidebarSkeleton />;
@@ -64,34 +102,149 @@ const Sidebar = ({ onExpandChange, isExpanded }) => {
                     </button>
                 </div>
                 
-                {/* Search Bar - Only show when expanded or on desktop */}
-                <div className={`${isExpanded ? 'block' : 'hidden lg:block'}`}>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-base-content/40" />
-                        <input
-                            type="text"
-                            placeholder="Search contacts..."
-                            className="w-full pl-10 pr-4 py-2 bg-base-200 border border-base-300 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 text-sm lg:text-base"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                {/* Friend tools */}
+                <div className={`${isExpanded ? 'block' : 'hidden lg:block'} space-y-3`}>
+                    <div className="p-3 bg-base-200 rounded-lg border border-base-300">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <UserPlus className="size-4 text-primary" />
+                                <span className="text-sm font-semibold">Add friend</span>
+                            </div>
+                            {authUser?.friendCode && (
+                                <button
+                                    onClick={handleCopyCode}
+                                    className="btn btn-ghost btn-xs gap-2"
+                                >
+                                    <Copy className="size-3.5" />
+                                    {authUser.friendCode}
+                                </button>
+                            )}
+                        </div>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                className="input input-sm input-bordered w-full"
+                                placeholder="Username or friend code"
+                                value={friendQuery}
+                                onChange={(e) => setFriendQuery(e.target.value)}
+                            />
+                            <button
+                                onClick={handleFriendSearch}
+                                className="btn btn-sm btn-primary"
+                                disabled={isSearching}
+                            >
+                                {isSearching ? "..." : "Find"}
+                            </button>
+                        </div>
+                        {searchResult && (
+                            <div className="mt-3 p-3 bg-base-100 rounded border border-base-300">
+                                <div className="flex items-center gap-3">
+                                    <img
+                                        src={searchResult.user.profilePic || "/avatar.png"}
+                                        alt={searchResult.user.fullName}
+                                        className="size-10 rounded-full object-cover border"
+                                    />
+                                    <div className="flex-1">
+                                        <div className="font-semibold text-sm">{searchResult.user.fullName}</div>
+                                        <div className="text-xs text-base-content/60">@{searchResult.user.userName}</div>
+                                    </div>
+                                    {searchResult.isFriend ? (
+                                        <span className="badge badge-success">Friends</span>
+                                    ) : searchResult.pendingRequestDirection === "incoming" ? (
+                                        <div className="flex gap-1">
+                                            <button
+                                                className="btn btn-xs btn-primary"
+                                                onClick={() => handleRespond(searchResult.requestId, "accept")}
+                                            >
+                                                Accept
+                                            </button>
+                                            <button
+                                                className="btn btn-xs btn-ghost"
+                                                onClick={() => handleRespond(searchResult.requestId, "reject")}
+                                            >
+                                                Reject
+                                            </button>
+                                        </div>
+                                    ) : searchResult.pendingRequestDirection === "outgoing" ? (
+                                        <span className="badge badge-warning">Pending</span>
+                                    ) : (
+                                        <button
+                                            className="btn btn-xs btn-primary"
+                                            onClick={() => handleSendRequest(searchResult.user.userName)}
+                                        >
+                                            Send Request
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Online Filter */}
-                    <div className="mt-3 flex items-center justify-between">
-                        <label className="cursor-pointer flex items-center gap-2 lg:gap-3">
+                    {/* Search Bar - Only show when expanded or on desktop */}
+                    <div>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-base-content/40" />
                             <input
-                                type="checkbox"
-                                checked={showOnlineOnly}
-                                onChange={(e) => setShowOnlineOnly(e.target.checked)}
-                                className="checkbox checkbox-primary checkbox-xs lg:checkbox-sm"
+                                type="text"
+                                placeholder="Search contacts..."
+                                className="w-full pl-10 pr-4 py-2 bg-base-200 border border-base-300 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 text-sm lg:text-base"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
                             />
-                            <span className="text-xs lg:text-sm font-medium">Online only</span>
-                        </label>
-                        <span className="text-xs text-base-content/60 bg-base-200 px-2 lg:px-3 py-1 lg:py-1.5 font-medium">
-                            {onlineUsers.length - 1} online
-                        </span>
+                        </div>
+
+                        {/* Online Filter */}
+                        <div className="mt-3 flex items-center justify-between">
+                            <label className="cursor-pointer flex items-center gap-2 lg:gap-3">
+                                <input
+                                    type="checkbox"
+                                    checked={showOnlineOnly}
+                                    onChange={(e) => setShowOnlineOnly(e.target.checked)}
+                                    className="checkbox checkbox-primary checkbox-xs lg:checkbox-sm"
+                                />
+                                <span className="text-xs lg:text-sm font-medium">Online only</span>
+                            </label>
+                        </div>
                     </div>
+
+                    {/* Requests */}
+                    {requests?.length > 0 && (
+                        <div className="p-3 bg-base-200 rounded-lg border border-base-300 space-y-2">
+                            <div className="text-sm font-semibold flex items-center gap-2">
+                                <CheckCircle className="size-4 text-primary" />
+                                Pending requests
+                            </div>
+                            {requests.map((req) => (
+                                <div key={req._id} className="flex items-center gap-2 justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <img
+                                            src={req.from.profilePic || "/avatar.png"}
+                                            alt={req.from.fullName}
+                                            className="size-8 rounded-full object-cover border"
+                                        />
+                                        <div>
+                                            <div className="text-sm font-semibold">{req.from.fullName}</div>
+                                            <div className="text-xs text-base-content/60">@{req.from.userName}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <button
+                                            className="btn btn-xs btn-primary"
+                                            onClick={() => handleRespond(req._id, "accept")}
+                                        >
+                                            Accept
+                                        </button>
+                                        <button
+                                            className="btn btn-xs btn-ghost"
+                                            onClick={() => handleRespond(req._id, "reject")}
+                                        >
+                                            Reject
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
