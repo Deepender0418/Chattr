@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { Camera, Mail, User, AtSign, Calendar, CheckCircle, Edit } from "lucide-react";
+import { Camera, Mail, User, AtSign, Calendar, CheckCircle, Edit, Users } from "lucide-react";
 
 const ProfilePage = () => {
     const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
@@ -15,7 +15,6 @@ const ProfilePage = () => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Check file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
             alert("Image size should be less than 5MB");
             return;
@@ -259,7 +258,10 @@ const ProfilePage = () => {
                         {/* Stats Card */}
                         <div className="grid grid-cols-2 gap-4 mt-6">
                             <div className="bg-primary/10 rounded-xl p-4 text-center border border-primary/20">
-                                <div className="text-2xl font-bold text-primary">0</div>
+                                <div className="text-2xl font-bold text-primary flex items-center justify-center gap-2">
+                                    <Users className="size-5" />
+                                    {authUser?.friends?.length ?? 0}
+                                </div>
                                 <div className="text-sm text-base-content/70">Friends</div>
                             </div>
                             <div className="bg-secondary/10 rounded-xl p-4 text-center border border-secondary/20">
