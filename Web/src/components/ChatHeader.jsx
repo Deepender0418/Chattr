@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { X, User, Mail, Calendar, ArrowLeft } from "lucide-react";
+import { X, User, Mail, Calendar, ArrowLeft, Trash2 } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
+import { useFriendStore } from "../store/useFriendStore";
 
 const ChatHeader = () => {
     const { selectedUser, setSelectedUser } = useChatStore();
     const { onlineUsers } = useAuthStore();
+    const { removeFriend } = useFriendStore();
     const [showProfile, setShowProfile] = useState(false);
 
     const formatDate = (dateString) => {
@@ -149,9 +151,17 @@ const ChatHeader = () => {
                             >
                                 Close
                             </button>
-                            {/* <button className="btn btn-primary flex-1">
-                                Start Call
-                            </button> */}
+                            <button
+                                className="btn btn-error flex-1 gap-2"
+                                onClick={async () => {
+                                    await removeFriend(selectedUser._id);
+                                    setShowProfile(false);
+                                    setSelectedUser(null);
+                                }}
+                            >
+                                <Trash2 className="size-4" />
+                                Remove Friend
+                            </button>
                         </div>
                     </div>
                 </div>
