@@ -6,32 +6,67 @@ import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
+import { Check, CheckCheck } from "lucide-react";
 
 const ChatContainer = () => {
     const {
         messages,
-        getMessages,
+        loadMessages,
         isMessagesLoading,
         selectedUser,
         subscribeToMessages,
         unsubscribeFromMessages,
+        hasMore,
+        nextCursor,
+        isLoadingMore,
+        markMessagesAsSeen,
     } = useChatStore();
     const { authUser } = useAuthStore();
     const messageEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
 
     useEffect(() => {
-        getMessages(selectedUser._id);
+        if (!selectedUser?._id) return;
+
+        loadMessages(selectedUser._id);
         subscribeToMessages();
 
         return () => unsubscribeFromMessages();
-    }, [selectedUser._id, getMessages, subscribeToMessages, unsubscribeFromMessages]);
+    }, [selectedUser?._id, loadMessages, subscribeToMessages, unsubscribeFromMessages]);
 
     useEffect(() => {
         if (messageEndRef.current && messages) {
             messageEndRef.current.scrollIntoView({ behavior: "smooth" });
         }
     }, [messages]);
+
+    useEffect(() => {
+        // Mark unseen messages as soon as they arrive for the open chat
+        if (!selectedUser?._id) return;
+        const hasUnseen = messages.some(
+            (msg) => msg.senderId === selectedUser._id && !msg.seen
+        );
+        if (hasUnseen) {
+            markMessagesAsSeen(selectedUser._id);
+        }
+    }, [messages, selectedUser, markMessagesAsSeen]);
+
+    useEffect(() => {
+        const container = messagesContainerRef.current;
+        if (!container) return;
+
+        const handleScroll = async () => {
+            if (container.scrollTop < 60 && hasMore && !isLoadingMore && selectedUser?._id) {
+                const prevHeight = container.scrollHeight;
+                await loadMessages(selectedUser._id, nextCursor);
+                const newHeight = container.scrollHeight;
+                container.scrollTop = newHeight - prevHeight + container.scrollTop;
+            }
+        };
+
+        container.addEventListener("scroll", handleScroll);
+        return () => container.removeEventListener("scroll", handleScroll);
+    }, [hasMore, isLoadingMore, loadMessages, nextCursor, selectedUser]);
 
     if (isMessagesLoading) {
         return (
@@ -95,6 +130,15 @@ const ChatContainer = () => {
                                 <time className="text-xs lg:text-sm opacity-60">
                                     {formatMessageTime(message.createdAt)}
                                 </time>
+                                {message.senderId === authUser._id && (
+                                    <span className="text-xs lg:text-sm opacity-60 flex items-center gap-1">
+                                        {message.seen ? (
+                                            <CheckCheck className="size-4 text-primary" />
+                                        ) : (
+                                            <Check className="size-4" />
+                                        )}
+                                    </span>
+                                )}
                             </div>
                             <div 
                                 className={`chat-bubble flex flex-col max-w-lg lg:max-w-2xl ${
@@ -103,9 +147,9 @@ const ChatContainer = () => {
                                         : "bg-base-300 text-base-content"
                                 }`}
                             >
-                                {message.image && (
+                                {message.media && (
                                     <img
-                                        src={message.image}
+                                        src={message.media}
                                         alt="Attachment"
                                         className="max-w-full lg:max-w-md rounded mb-3"
                                     />
