@@ -22,12 +22,12 @@ const App = () => {
 
     useEffect(() => {
         if (!hasCheckedAuth.current) {
-        hasCheckedAuth.current = true;
-        checkAuth();
+            hasCheckedAuth.current = true;
+            checkAuth();
         }
 
         const timer = setTimeout(() => {
-        setShowWakeMessage(true);
+            setShowWakeMessage(true);
         }, 3000);
 
         return () => clearTimeout(timer);
@@ -35,15 +35,15 @@ const App = () => {
 
     if (isCheckingAuth && !authUser) {
         return (
-        <div className="flex flex-col items-center justify-center h-screen space-y-4">
-            <Loader className="size-12 animate-spin text-primary" />
-            <div className="text-center">
-            <p className="text-lg font-semibold">Loading Ch@ttr</p>
-            <p className="text-sm text-base-content/60">
-                {showWakeMessage ? "Waking Backend Up..." : "Checking authentication..."}
-            </p>
+            <div className="flex flex-col items-center justify-center h-screen space-y-4">
+                <Loader className="size-12 animate-spin text-primary" />
+                <div className="text-center">
+                    <p className="text-lg font-semibold">Loading Ch@ttr</p>
+                    <p className="text-sm text-base-content/60">
+                        {showWakeMessage ? "Waking Backend Up..." : "Checking authentication..."}
+                    </p>
+                </div>
             </div>
-        </div>
         );
     }
 
@@ -51,16 +51,16 @@ const App = () => {
         <div data-theme={theme}>
         <Navbar />
 
-        <Routes>
-            <Route path="*" element={<Navigate to="/" />} />
-            <Route path="/" element={authUser ? <HomePage /> : <Navigate to="/login" />} />
-            <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to="/" />} />
-            <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
-            <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
-            <Route path="/forgot-password" element={!authUser ? <ForgotPasswordPage /> : <Navigate to="/" />} />
-            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-            <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
-        </Routes>
+            <Routes>
+                <Route path="*" element={<Navigate to="/" />} />
+                <Route path="/" element={authUser ? <HomePage /> : <Navigate to="/login" />} />
+                <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to="/" />} />
+                <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
+                <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
+                <Route path="/forgot-password" element={!authUser ? <ForgotPasswordPage /> : <Navigate to="/" />} />
+                <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+                <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
+            </Routes>
 
         <Toaster />
         </div>
