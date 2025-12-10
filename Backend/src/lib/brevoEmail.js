@@ -57,9 +57,11 @@ export const sendEmail = async ({
 
     try {
         console.log(`[Brevo] Sending email to ${toEmail} (${toName})...`);
-        const result = await withTimeout(apiInstance.sendTransacEmail(sendSmtpEmail));
+        const result = apiInstance.sendTransacEmail(sendSmtpEmail)
+        .then(r => console.log(`[Brevo] Sent to ${toEmail}`))
+        .catch(err => console.error("[Brevo async error]", err));
         console.log(`[Brevo] Email sent successfully. MessageID: ${result.messageId}`);
-        return { success: true, messageId: result.messageId, message: "Email sent via Brevo" };
+        return { success: true };
     } catch (error) {
         console.error("❌ [Brevo Email Error]", error.message);
         if (error.response?.body) {
