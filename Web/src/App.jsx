@@ -62,7 +62,7 @@ const App = () => {
                 <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
                 <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
 
-                <Route path="*" element={<Navigate to="/" />} />
+                <Route path="*" element={<div>404 Page Not Found</div>} />
             </Routes>
 
         <Toaster />
