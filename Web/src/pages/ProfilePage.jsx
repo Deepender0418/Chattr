@@ -264,10 +264,6 @@ const ProfilePage = () => {
                                 </div>
                                 <div className="text-sm text-base-content/70">Friends</div>
                             </div>
-                            <div className="bg-secondary/10 rounded-xl p-4 text-center border border-secondary/20">
-                                <div className="text-2xl font-bold text-secondary">0</div>
-                                <div className="text-sm text-base-content/70">Groups</div>
-                            </div>
                         </div>
                     </div>
                 </div>
