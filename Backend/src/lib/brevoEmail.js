@@ -1,50 +1,102 @@
-// lib/brevoEmail.js
-import brevo from '@getbrevo/brevo';
+import brevo from "@getbrevo/brevo";
 
-// Initialize the API client with your key
+if (!process.env.BREVO_API_KEY || !process.env.SENDER_EMAIL) {
+    throw new Error(
+        "Email configuration error: BREVO_API_KEY and SENDER_EMAIL are required for Brevo."
+    );
+}
+
 const apiInstance = new brevo.TransactionalEmailsApi();
+apiInstance.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
 
-// Configure API key authentication
-const apiKey = apiInstance.authentications['apiKey'];
-apiKey.apiKey = process.env.BREVO_API_KEY;
+const withTimeout = (promise, ms = 10000) =>
+    Promise.race([
+        promise,
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`Email request timeout after ${ms}ms`)), ms)
+        ),
+    ]);
 
-// Log for debugging (remove in production)
-console.log('[Brevo Config] API Key configured:', process.env.BREVO_API_KEY ? 'Yes (Length: ' + process.env.BREVO_API_KEY.length + ')' : 'NO - KEY MISSING');
+const htmlToText = (html) => {
+    return html
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<p>/gi, '\n\n')
+        .replace(/<\/p>/gi, '')
+        .replace(/<[^>]*>/g, '')
+        .replace(/\n\s*\n/g, '\n\n')
+        .trim();
+};
 
 /**
- * Sends a transactional email via Brevo API.
- * @param {Object} options - Email options.
- * @param {string} options.toEmail - Recipient email address.
- * @param {string} options.toName - Recipient name.
- * @param {string} options.subject - Email subject.
- * @param {string} options.htmlContent - The HTML body of the email.
+ * Sends transactional email via Brevo API.
+ * @param {Object} params
+ * @param {string} params.toEmail - Recipient email
+ * @param {string} params.toName - Recipient name
+ * @param {string} params.subject - Email subject
+ * @param {string} params.htmlContent - HTML content
+ * @param {string} [params.textContent] - Optional plain text content (auto-generated if not provided)
+ * @returns {Promise<Object>} Brevo API response
  */
-export const sendEmail = async ({ toEmail, toName, subject, htmlContent }) => {
-    // Create the email object
+export const sendEmail = async ({ 
+    toEmail, 
+    toName, 
+    subject, 
+    htmlContent,
+    textContent 
+    }) => {
+    const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER;
+    const senderName = process.env.SENDER_NAME || "Chattr";
+    const textBody = textContent || htmlToText(htmlContent);
+
     const sendSmtpEmail = new brevo.SendSmtpEmail();
-    
-    sendSmtpEmail.sender = {
-        name: process.env.SENDER_NAME || 'Your App',
-        email: process.env.SENDER_EMAIL, // MUST be verified in Brevo
-    };
+    sendSmtpEmail.sender = { name: senderName, email: senderEmail };
     sendSmtpEmail.to = [{ email: toEmail, name: toName }];
     sendSmtpEmail.subject = subject;
     sendSmtpEmail.htmlContent = htmlContent;
-    // Optional: add a plain text version for better deliverability
-    sendSmtpEmail.textContent = htmlContent.replace(/<[^>]*>/g, '');
+    sendSmtpEmail.textContent = textBody;
 
     try {
-        console.log(`[Brevo] Attempting to send email to: ${toEmail}`);
-        const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
-        console.log('[Brevo] Email sent successfully. Message ID:', data.messageId);
-        return data;
+        console.log(`[Brevo] Sending email to ${toEmail} (${toName})...`);
+        const result = await withTimeout(apiInstance.sendTransacEmail(sendSmtpEmail));
+        console.log(`[Brevo] Email sent successfully. MessageID: ${result.messageId}`);
+        return { success: true, messageId: result.messageId, message: "Email sent via Brevo" };
     } catch (error) {
-        console.error('[Brevo API Error] Full Error:', error);
-        // Provide a more user-friendly error message
-        if (error.response) {
-            console.error('[Brevo API Error] Response Body:', error.response.body);
-            console.error('[Brevo API Error] Response Text:', error.response.text);
+        console.error("❌ [Brevo Email Error]", error.message);
+        if (error.response?.body) {
+            console.error("➡️ Brevo Response Body:", JSON.stringify(error.response.body, null, 2));
         }
-        throw new Error(`Failed to send email: ${error.message}`);
+        throw new Error(
+            `Failed to send email to ${toEmail} via Brevo: ${error.message}${
+            error.response?.body?.message ? ` - ${error.response.body.message}` : ""
+        }`
+        );
     }
+};
+
+/**
+ * Utility function to send common email types
+ */
+export const sendVerificationEmail = async ({ toEmail, toName, verificationLink }) => {
+    const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Verify Your Email</h2>
+            <p>Hello ${toName},</p>
+            <p>Please click the link below to verify your email address:</p>
+            <p>
+                <a href="${verificationLink}" 
+                style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                    Verify Email
+                </a>
+            </p>
+            <p>Or copy this link: ${verificationLink}</p>
+            <p>This link will expire in 24 hours.</p>
+        </div>
+    `;
+
+    return sendEmail({
+        toEmail,
+        toName,
+        subject: "Verify Your Email",
+        htmlContent,
+    });
 };
