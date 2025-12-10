@@ -25,6 +25,17 @@ const userSchema = new mongoose.Schema(
             type: String,
             default: "https://i.pinimg.com/1200x/56/af/7e/56af7ed2c15a58fed21e8ffd0744bb1e.jpg",
         },
+        friendCode: {
+            type: String,
+            unique: true,
+            sparse: true,
+        },
+        friends: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+            },
+        ],
         resetPasswordToken: { 
             type: String 
         },
@@ -37,7 +48,6 @@ const userSchema = new mongoose.Schema(
         },
         verificationToken: String,
         verificationTokenExpires: Date,
-
     },
     { timestamps: true }
 );
