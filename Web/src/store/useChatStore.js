@@ -9,6 +9,9 @@ export const useChatStore = create((set, get) => ({
     selectedUser: null,
     isUsersLoading: false,
     isMessagesLoading: false,
+    isLoadingMore: false,
+    hasMore: true,
+    nextCursor: null,
 
     getUsers: async () => {
         set({ isUsersLoading: true });
@@ -23,16 +26,34 @@ export const useChatStore = create((set, get) => ({
         }
     },
 
-    getMessages: async (userId) => {
-        set({ isMessagesLoading: true });
+    loadMessages: async (userId, cursor = null) => {
+        const isInitial = !cursor;
+
+        if (isInitial) {
+            set({ isMessagesLoading: true, hasMore: true, nextCursor: null, messages: [] });
+        } else {
+            set({ isLoadingMore: true });
+        }
+
         try {
-            const res = await axiosInstance.get(`/messages/${userId}`);
-            set({ messages: res.data });
+            const res = await axiosInstance.get(`/messages/${userId}`, {
+                params: { cursor, limit: 20 },
+            });
+
+            const { messages: newMessages = [], hasMore, nextCursor } = res.data;
+            const current = get().messages;
+
+            set({
+                messages: isInitial ? newMessages : [...newMessages, ...current],
+                hasMore: Boolean(hasMore),
+                nextCursor: nextCursor || null,
+                isMessagesLoading: false,
+                isLoadingMore: false,
+            });
         } catch (error) {
             console.log('Get messages error:', error.response?.data || error.message);
             toast.error(error.response?.data?.message || "Failed to load messages");
-        } finally {
-            set({ isMessagesLoading: false });
+            set({ isMessagesLoading: false, isLoadingMore: false });
         }
     },
 
@@ -60,16 +81,39 @@ export const useChatStore = create((set, get) => ({
             return;
         }
 
-        console.log('Subscribing to messages for user:', selectedUser._id);
+        socket.off("newMessage");
+        socket.off("messagesSeen");
 
         socket.on("newMessage", (newMessage) => {
-            console.log('New message received:', newMessage);
-            const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
-            if (!isMessageSentFromSelectedUser) return;
+            const { selectedUser, messages } = get();
+            if (!selectedUser) return;
 
-            set({
-                messages: [...get().messages, newMessage],
-            });
+            const isSameChat =
+                newMessage.senderId === selectedUser._id ||
+                newMessage.receiverId === selectedUser._id;
+            if (!isSameChat) return;
+
+            if (messages.some((m) => m._id === newMessage._id)) return;
+
+            set({ messages: [...messages, newMessage] });
+
+            if (newMessage.senderId === selectedUser._id) {
+                get().markMessagesAsSeen(selectedUser._id);
+            }
+        });
+
+        socket.on("messagesSeen", ({ messageIds = [], userId }) => {
+            const { selectedUser, messages } = get();
+            if (!selectedUser || userId !== selectedUser._id) return;
+
+            const idStrings = messageIds.map((id) => id.toString());
+            const updated = messages.map((msg) =>
+                idStrings.includes(msg._id?.toString())
+                    ? { ...msg, seen: true, seenAt: msg.seenAt || new Date().toISOString() }
+                    : msg
+            );
+
+            set({ messages: updated });
         });
     },
 
@@ -77,9 +121,18 @@ export const useChatStore = create((set, get) => ({
         const socket = useAuthStore.getState().socket;
         if (socket) {
             socket.off("newMessage");
+            socket.off("messagesSeen");
             console.log('Unsubscribed from messages');
         }
     },
 
     setSelectedUser: (selectedUser) => set({ selectedUser }),
+
+    markMessagesAsSeen: async (userId) => {
+        try {
+            await axiosInstance.post(`/messages/${userId}/mark-seen`);
+        } catch (error) {
+            console.log('Mark seen error:', error.response?.data || error.message);
+        }
+    },
 }));
