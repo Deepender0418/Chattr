@@ -355,7 +355,6 @@ export const updateProfile = async (req, res) => {
     }
 };
 
-// Check Auth Controller
 export const checkAuth = async (req, res) => {
     try {
         const user = await User.findById(req.user._id)
@@ -388,6 +387,9 @@ export const checkAuth = async (req, res) => {
 
 export const verifyEmail = async (req, res) => {
     const { token } = req.params;
+
+    console.log("verify email was called");
+    console.log(token);
 
     try {
         if (!token) {
