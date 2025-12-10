@@ -1,15 +1,20 @@
 import { useState } from "react";
 import { Mail, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useAuthStore } from "../store/useAuthStore";
 
 const ForgotPasswordPage = () => {
     const [email, setEmail] = useState("");
     const { sendResetEmail, isSendingReset } = useAuthStore();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        sendResetEmail({ email });
+        if (!email.trim()) {
+            toast.error("Please enter your email");
+            return;
+        }
+        await sendResetEmail({ email });
     };
 
     return (
