@@ -15,8 +15,6 @@ export const useAuthStore = create((set, get) => ({
     isResettingPassword: false,
     onlineUsers: [],
     socket: null,
-
-
     
     checkAuth: async () => {
         if (get().isCheckingAuth) return;
@@ -27,7 +25,7 @@ export const useAuthStore = create((set, get) => ({
             const res = await axiosInstance.get("/auth/check");
 
             set({
-                authUser: res.data,
+                authUser: res.data?.data,
                 isCheckingAuth: false
             });
 
@@ -39,8 +37,6 @@ export const useAuthStore = create((set, get) => ({
             });
         }
     },
-
-
 
     signup: async (data) => {
         set({ isSigningUp: true });
@@ -58,7 +54,6 @@ export const useAuthStore = create((set, get) => ({
     },
 
 
-
     login: async (data) => {
         set({ isLoggingIn: true });
 
@@ -66,7 +61,7 @@ export const useAuthStore = create((set, get) => ({
             const res = await axiosInstance.post("/auth/login", data);
 
             set({
-                authUser: res.data,
+                authUser: res.data?.data,
                 isLoggingIn: false
             });
 
@@ -77,8 +72,6 @@ export const useAuthStore = create((set, get) => ({
             set({ isLoggingIn: false });
         }
     },
-
-
 
     logout: async () => {
         try {
@@ -94,8 +87,6 @@ export const useAuthStore = create((set, get) => ({
         toast.success("Logged out");
     },
 
-
-
     sendResetEmail: async ({ email }) => {
         set({ isSendingReset: true });
 
@@ -109,15 +100,16 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
-
-
-    resetPassword: async (token, password) => {
+    resetPassword: async (token, password, confirmPassword) => {
         set({ isResettingPassword: true });
 
         try {
-            await axiosInstance.put(`/auth/reset-password/${token}`, { password });
-            toast.success("Password reset successfully!");
-            return { success: true };
+            const res = await axiosInstance.put(`/auth/reset-password/${token}`, { 
+                password, 
+                confirmPassword
+            });
+            toast.success(res.data.message || "Password reset successfully!");
+            return { success: res.data?.success ?? true, message: res.data.message };
         } catch (error) {
             toast.error(error.response?.data?.message || "Password reset failed");
             return { success: false };
@@ -126,8 +118,6 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
-
-
     updateProfile: async (data) => {
         set({ isUpdatingProfile: true });
 
@@ -135,7 +125,7 @@ export const useAuthStore = create((set, get) => ({
             const res = await axiosInstance.put("/auth/update-profile", data);
 
             set({
-                authUser: res.data,
+                authUser: res.data?.data,
                 isUpdatingProfile: false
             });
 
@@ -146,14 +136,12 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
-
-
     verifyEmailLogin: async (token) => {
         try {
             const res = await axiosInstance.get(`/auth/verify-email/${token}`);
 
-            if (res.data?.user) {
-                set({ authUser: res.data.user });
+            if (res.data?.data?.user) {
+                set({ authUser: res.data.data.user });
                 toast.success("Email verified! You're now logged in.");
                 get().connectSocket();
             }
@@ -164,22 +152,37 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
-
     connectSocket: () => {
         const { authUser } = get();
         if (!authUser) return;
 
         if (get().socket?.connected) return;
 
-        const socket = io(BASE_URL, {
-            query: { userId: authUser._id }
-        });
+        try {
+            const socket = io(BASE_URL, {
+                query: { userId: authUser._id },
+                transports: ['websocket', 'polling'], // Fallback
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000
+            });
 
-        socket.on("getOnlineUsers", (userIds) => {
-            set({ onlineUsers: userIds });
-        });
+            socket.on("connect", () => {
+                console.log("Socket connected:", socket.id);
+            });
 
-        set({ socket });
+            socket.on("connect_error", (error) => {
+                console.error("Socket connection error:", error);
+            });
+
+            socket.on("getOnlineUsers", (userIds) => {
+                set({ onlineUsers: userIds });
+            });
+
+            set({ socket });
+        } catch (error) {
+            console.error("Failed to connect socket:", error);
+        }
     },
 
     disconnectSocket: () => {
