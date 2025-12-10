@@ -7,6 +7,7 @@ import { connectDB } from "./lib/db.js";
 
 import authRoutes from "./routes/auth_route.js";
 import messageRoutes from "./routes/message_route.js";
+import friendRoutes from "./routes/friend_route.js";
 import { app, server } from "./lib/socket.js";
 
 dotenv.config();
@@ -21,15 +22,17 @@ app.use(
         origin: FrontURL,
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-        allowedHeaders: ["Content-Type", "Authorization"]
+        allowedHeaders: ["Content-Type", "Authorization"],
     })
 );
 
-app.use("/api/health", (req, res) => {
+
+app.get("/api/health", (_req, res) => {
     res.status(200).send("API is running");
 });
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/friends", friendRoutes);
 
 server.listen(PORT, () => {
     connectDB();
