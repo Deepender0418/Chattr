@@ -34,18 +34,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/friends", friendRoutes);
 
-
-    const isProduction = process.env.NODE_ENV === "production";
-
-    if(isProduction)
-    {
-        console.log("Production!!!");
-    }
-    else
-    {
-        console.log("Development!!!");
-    }
-
 server.listen(PORT, () => {
     connectDB();
 });
