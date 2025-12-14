@@ -8,11 +8,20 @@ export const generateToken = (userId, res) => {
 
     const isProduction = process.env.NODE_ENV === "production";
 
+    if(isProduction)
+    {
+        console.log("Production!!!");
+    }
+    else
+    {
+        console.log("Development!!!");
+    }
+
     res.cookie("jwt", token, {
         maxAge: 7 * 24 * 60 * 60 * 1000,
         httpOnly: true,
-        sameSite: "none",
-        secure: true,
+        sameSite: isProduction ? "none" : "lax",
+        secure: isProduction,
     });
 
     return token;
