@@ -4,7 +4,7 @@ import { Loader } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import toast from "react-hot-toast";
 
-const VerifyEmailPage = () {
+const VerifyEmailPage = () => {
     const { token } = useParams();
     const { verifyEmailLogin, authUser } = useAuthStore();
 
