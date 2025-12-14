@@ -26,29 +26,6 @@ const NoChatSelected = () => {
                     </p>
                 </div>
 
-                {/* Features Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 pt-8">
-                    <div className="text-center p-4 lg:p-6 bg-base-200 border border-base-300 hover:shadow transition-shadow duration-300">
-                        <div className="text-3xl lg:text-4xl mb-3">😊</div>
-                        <p className="text-sm lg:text-base font-semibold">Emoji Support</p>
-                        <p className="text-xs lg:text-sm text-base-content/60 mt-1">Express with emojis</p>
-                    </div>
-                    <div className="text-center p-4 lg:p-6 bg-base-200 border border-base-300 hover:shadow transition-shadow duration-300">
-                        <div className="text-3xl lg:text-4xl mb-3">🖼️</div>
-                        <p className="text-sm lg:text-base font-semibold">Image Sharing</p>
-                        <p className="text-xs lg:text-sm text-base-content/60 mt-1">Share photos & media</p>
-                    </div>
-                    <div className="text-center p-4 lg:p-6 bg-base-200 border border-base-300 hover:shadow transition-shadow duration-300">
-                        <div className="text-3xl lg:text-4xl mb-3">⚡</div>
-                        <p className="text-sm lg:text-base font-semibold">Real-time</p>
-                        <p className="text-xs lg:text-sm text-base-content/60 mt-1">Instant messaging</p>
-                    </div>
-                    <div className="text-center p-4 lg:p-6 bg-base-200 border border-base-300 hover:shadow transition-shadow duration-300">
-                        <div className="text-3xl lg:text-4xl mb-3">👥</div>
-                        <p className="text-sm lg:text-base font-semibold">Online Status</p>
-                        <p className="text-xs lg:text-sm text-base-content/60 mt-1">See who's online</p>
-                    </div>
-                </div>
             </div>
         </div>
     );
