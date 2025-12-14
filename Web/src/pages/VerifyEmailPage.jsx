@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, Navigate } from "react-router-dom";
 import { Loader } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import toast from "react-hot-toast";
 
 export default function VerifyEmailPage() {
     const { token } = useParams();
-    const verifyEmailLogin = useAuthStore((s) => s.verifyEmailLogin);
+    const { verifyEmailLogin, authUser } = useAuthStore();
 
     const [status, setStatus] = useState("loading");
     const hasRequested = useRef(false);
@@ -18,8 +18,8 @@ export default function VerifyEmailPage() {
         const verify = async () => {
             const result = await verifyEmailLogin(token);
 
-            if (result?.data?.user) {
-                toast.success(result.message || "Email verified successfully!");
+            if (result?.success !== false) {
+                toast.success(result?.message || "Email verified successfully!");
                 setStatus("success");
             } else {
                 setStatus("error");
@@ -28,6 +28,10 @@ export default function VerifyEmailPage() {
 
         verify();
     }, [token, verifyEmailLogin]);
+
+    if (authUser) {
+        return <Navigate to="/" replace />;
+    }
 
     if (status === "loading") {
         return (
