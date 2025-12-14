@@ -28,14 +28,15 @@ const SignUpPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isSigningUp) return;
+    
         const valid = validateForm();
-
         if (!valid) return;
-
+    
         const result = await signup(formData);
-
+    
         if (result?.success) {
-        navigate("/verify-email");
+            setTimeout(() => navigate("/verify-email"), 1200);
         }
     };
 
