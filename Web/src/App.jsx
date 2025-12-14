@@ -59,7 +59,7 @@ const App = () => {
                 <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
 
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+                <Route path="/check-email" element={<CheckEmailPage />} />
                 <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
 
                 <Route path="*" element={<div>404 Page Not Found</div>} />
