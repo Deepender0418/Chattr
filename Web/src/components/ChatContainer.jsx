@@ -174,13 +174,28 @@ const ChatContainer = () => {
                             </div>
 
                             <div
-                                className={`chat-bubble max-w-lg ${
+                                className={`chat-bubble flex flex-col gap-2 max-w-lg ${
                                     message.senderId === authUser._id
                                         ? "bg-primary text-primary-content"
                                         : "bg-base-300"
                                 }`}
                             >
-                                {message.text}
+                                {/* MEDIA */}
+                                {message.media && (
+                                    <img
+                                        src={message.media}
+                                        alt="Attachment"
+                                        className="max-w-full rounded-lg"
+                                        loading="lazy"
+                                    />
+                                )}
+                            
+                                {/* TEXT */}
+                                {message.text && (
+                                    <p className="whitespace-pre-wrap break-words">
+                                        {message.text}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     ))
