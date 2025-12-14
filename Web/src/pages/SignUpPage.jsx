@@ -36,7 +36,7 @@ const SignUpPage = () => {
         const result = await signup(formData);
     
         if (result?.success) {
-            setTimeout(() => navigate("/verify-email"), 1200);
+            navigate("/check-email");
         }
     };
 
