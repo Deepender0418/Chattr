@@ -21,52 +21,89 @@ const ChatContainer = () => {
         isLoadingMore,
         markMessagesAsSeen,
     } = useChatStore();
+
     const { authUser } = useAuthStore();
+
     const messageEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
+    const hasScrolledRef = useRef(false);
 
     useEffect(() => {
         if (!selectedUser?._id) return;
 
+        hasScrolledRef.current = false;
         loadMessages(selectedUser._id);
         subscribeToMessages();
 
         return () => unsubscribeFromMessages();
-    }, [selectedUser?._id, loadMessages, subscribeToMessages, unsubscribeFromMessages]);
+    }, [selectedUser?._id]);
+
+    const scrollToBottom = (smooth = true) => {
+        messageEndRef.current?.scrollIntoView({
+            behavior: smooth ? "smooth" : "auto",
+        });
+    };
 
     useEffect(() => {
-        if (messageEndRef.current && messages) {
-            messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+        if (!isMessagesLoading && messages.length > 0) {
+            scrollToBottom(false);
         }
-    }, [messages]);
+    }, [isMessagesLoading]);
+
+    const isNearBottom = () => {
+        const el = messagesContainerRef.current;
+        if (!el) return false;
+        return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    };
 
     useEffect(() => {
-        // Mark unseen messages as soon as they arrive for the open chat
+        if (isNearBottom()) {
+            scrollToBottom();
+        }
+    }, [messages.length]);
+
+    useEffect(() => {
         if (!selectedUser?._id) return;
+
         const hasUnseen = messages.some(
             (msg) => msg.senderId === selectedUser._id && !msg.seen
         );
+
         if (hasUnseen) {
             markMessagesAsSeen(selectedUser._id);
         }
-    }, [messages, selectedUser, markMessagesAsSeen]);
+    }, [messages, selectedUser]);
+
 
     useEffect(() => {
         const container = messagesContainerRef.current;
         if (!container) return;
 
         const handleScroll = async () => {
-            if (container.scrollTop < 60 && hasMore && !isLoadingMore && selectedUser?._id) {
+            if (!hasScrolledRef.current) {
+                hasScrolledRef.current = true;
+                return;
+            }
+
+            if (
+                container.scrollTop <= 50 &&
+                hasMore &&
+                !isLoadingMore &&
+                selectedUser?._id
+            ) {
                 const prevHeight = container.scrollHeight;
+
                 await loadMessages(selectedUser._id, nextCursor);
+
                 const newHeight = container.scrollHeight;
-                container.scrollTop = newHeight - prevHeight + container.scrollTop;
+                container.scrollTop = newHeight - prevHeight;
             }
         };
 
         container.addEventListener("scroll", handleScroll);
         return () => container.removeEventListener("scroll", handleScroll);
-    }, [hasMore, isLoadingMore, loadMessages, nextCursor, selectedUser]);
+    }, [hasMore, isLoadingMore, nextCursor, selectedUser]);
+
 
     if (isMessagesLoading) {
         return (
@@ -83,55 +120,50 @@ const ChatContainer = () => {
     return (
         <div className="flex flex-col h-full bg-base-100">
             <ChatHeader />
-            
-            {/* Messages container with proper scroll */}
-            <div 
+
+            <div
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 lg:space-y-6 bg-base-200/10"
+                className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 bg-base-200/10"
             >
                 {messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-base-content/60 px-4">
-                        <div className="text-center space-y-4 max-w-2xl">
-                            <div className="text-4xl lg:text-6xl">👋</div>
-                            <p className="font-bold text-2xl lg:text-3xl text-base-content/80">Start a conversation</p>
-                            <p className="text-base-content/60 text-lg lg:text-xl">
-                                Send your first message to {selectedUser.fullName}
-                            </p>
-                            <div className="pt-4 text-sm lg:text-base text-base-content/40 space-y-2">
-                                <p>💬 Send text messages with real-time delivery</p>
-                                <p>😊 Use emojis to express yourself</p>
-                                <p>🖼️ Share images and media files</p>
-                            </div>
-                        </div>
+                    <div className="flex items-center justify-center h-full text-base-content/60">
+                        Start a conversation with {selectedUser.fullName}
                     </div>
                 ) : (
                     messages.map((message) => (
                         <div
                             key={message._id}
-                            className={`chat ${message.senderId === authUser._id ? "chat-end" : "chat-start"} w-full max-w-full`}
+                            className={`chat ${
+                                message.senderId === authUser._id
+                                    ? "chat-end"
+                                    : "chat-start"
+                            }`}
                         >
                             <div className="chat-image avatar">
-                                <div className="size-10 lg:size-12 rounded-full overflow-hidden border border-base-300">
+                                <div className="size-10 rounded-full overflow-hidden">
                                     <img
                                         src={
                                             message.senderId === authUser._id
                                                 ? authUser.profilePic || "/avatar.png"
                                                 : selectedUser.profilePic || "/avatar.png"
                                         }
-                                        alt="profile pic"
-                                        className="w-full h-full object-cover"
+                                        alt="profile"
                                     />
                                 </div>
                             </div>
-                            <div className="chat-header mb-2 flex items-center gap-3">
-                                <span className="text-sm lg:text-base font-semibold">
-                                    {message.senderId === authUser._id ? "You" : selectedUser.fullName}
+
+                            <div className="chat-header flex items-center gap-2">
+                                <span className="font-semibold">
+                                    {message.senderId === authUser._id
+                                        ? "You"
+                                        : selectedUser.fullName}
                                 </span>
-                                <time className="text-xs lg:text-sm opacity-60">
+                                <time className="text-xs opacity-60">
                                     {formatMessageTime(message.createdAt)}
                                 </time>
+
                                 {message.senderId === authUser._id && (
-                                    <span className="text-xs lg:text-sm opacity-60 flex items-center gap-1">
+                                    <span>
                                         {message.seen ? (
                                             <CheckCheck className="size-4 text-primary" />
                                         ) : (
@@ -140,25 +172,15 @@ const ChatContainer = () => {
                                     </span>
                                 )}
                             </div>
-                            <div 
-                                className={`chat-bubble flex flex-col max-w-lg lg:max-w-2xl ${
-                                    message.senderId === authUser._id 
-                                        ? "bg-primary text-primary-content" 
-                                        : "bg-base-300 text-base-content"
+
+                            <div
+                                className={`chat-bubble max-w-lg ${
+                                    message.senderId === authUser._id
+                                        ? "bg-primary text-primary-content"
+                                        : "bg-base-300"
                                 }`}
                             >
-                                {message.media && (
-                                    <img
-                                        src={message.media}
-                                        alt="Attachment"
-                                        className="max-w-full lg:max-w-md rounded mb-3"
-                                    />
-                                )}
-                                {message.text && (
-                                    <p className="whitespace-pre-wrap text-base lg:text-lg leading-relaxed">
-                                        {message.text}
-                                    </p>
-                                )}
+                                {message.text}
                             </div>
                         </div>
                     ))
