@@ -80,7 +80,6 @@ export const signup = async (req, res) => {
             });
         }
 
-        // Check existing user
         const existingUser = await User.findOne({ 
             $or: [{ userName: userName.toLowerCase() }, { email: email.toLowerCase() }] 
         });
@@ -121,35 +120,23 @@ export const signup = async (req, res) => {
         const verifyURL = `${process.env.FRONTENDURL}/verify-email/${token}`;
         const emailContent = createVerificationEmail(userName, fullName, verifyURL);
 
-        try {
-            await sendEmail({
-                toEmail: newUser.email,
-                toName: newUser.fullName,
-                subject: 'Verify Your Email Address',
-                htmlContent: emailContent
-            });
+        sendEmail({
+            toEmail: newUser.email,
+            toName: newUser.fullName,
+            subject: "Verify Your Email Address",
+            htmlContent: emailContent,
+        }).catch((err) => {
+            console.error("Signup email failed:", err.message);
+        });
 
-            res.status(201).json({
-                success: true,
-                message: "Account created successfully. Please check your email to verify your account.",
-                data: {
-                    email: newUser.email,
-                    userId: newUser._id
-                }
-            });
-
-        } catch (emailError) {
-            console.error("Signup: Email sending failed:", emailError);
-
-            return res.status(500).json({
-                success: false,
-                message: "Account created but failed to send verification email. Please use 'Resend Verification'",
-                data: {
-                    email: newUser.email,
-                    userId: newUser._id
-                }
-            });
-        }
+        return res.status(201).json({
+            success: true,
+            message: "Account created successfully. Please check your email to verify your account.",
+            data: {
+                email: newUser.email,
+                userId: newUser._id,
+            },
+        });
 
     } catch (error) {
         console.error("Error in signup controller:", error);
@@ -503,18 +490,21 @@ export const resendVerification = async (req, res) => {
         const verifyURL = `${process.env.FRONTENDURL}/verify-email/${token}`;
         const emailContent = createVerificationEmail(user.userName, user.fullName, verifyURL);
 
-        await sendEmail({
+        sendEmail({
             toEmail: user.email,
             toName: user.fullName,
-            subject: 'Verify Your Email Address',
-            htmlContent: emailContent
+            subject: "Verify Your Email Address",
+            htmlContent: emailContent,
+        }).catch(err => {
+            console.error("Resend verification email failed:", err.message);
         });
 
-        res.status(200).json({ 
+        return res.status(200).json({
             success: true,
             message: "Verification email sent successfully. Please check your inbox.",
-            data: { email: user.email }
+            data: { email: user.email },
         });
+
 
     } catch (error) {
         console.error("Error in resendVerification controller:", error);
@@ -527,191 +517,177 @@ export const resendVerification = async (req, res) => {
 
 export const forgotPassword = async (req, res) => {
     const { email } = req.body;
+
     try {
         if (!email) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: "Email is required" 
+                message: "Email is required",
             });
         }
 
-        const user = await User.findOne({ email: email.toLowerCase() });
+        const normalizedEmail = email.toLowerCase();
+        const user = await User.findOne({ email: normalizedEmail });
 
         if (!user) {
-            return res.status(200).json({ 
+            return res.status(200).json({
                 success: true,
-                message: "If an account exists with this email, a password reset link will be sent." 
+                message:
+                    "If an account exists with this email, a password reset link will be sent.",
+            });
+        }
+
+        if (
+            user.resetPasswordExpires &&
+            user.resetPasswordExpires > Date.now() - 5 * 60 * 1000
+        ) {
+            return res.status(429).json({
+                success: false,
+                message:
+                    "A password reset link was recently sent. Please check your email or try again later.",
             });
         }
 
         const resetToken = crypto.randomBytes(32).toString("hex");
         const hashedResetToken = crypto
-        .createHash("sha256")
-        .update(resetToken)
-        .digest("hex");
+            .createHash("sha256")
+            .update(resetToken)
+            .digest("hex");
 
         user.resetPasswordToken = hashedResetToken;
         user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
 
         await user.save();
-        
+
         const resetURL = `${process.env.FRONTENDURL}/reset-password/${resetToken}`;
 
-        console.log("Reset URL generated:", resetURL);
-
-        await sendEmail({
+        sendEmail({
             toEmail: user.email,
             toName: user.fullName,
-            subject: 'Reset Your Password',
+            subject: "Reset Your Password",
             htmlContent: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2>Password Reset Request</h2>
-                <p>Hello ${user.fullName},</p>
-                <p>You requested to reset your password. Click the button below to create a new password:</p>
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="${resetURL}" 
-                    style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
-                    Reset Password
-                    </a>
+                    <h2>Password Reset Request</h2>
+                    <p>Hello ${user.fullName},</p>
+                    <p>You requested to reset your password. Click the button below:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${resetURL}"
+                           style="background-color: #007bff; color: white; padding: 12px 24px;
+                           text-decoration: none; border-radius: 5px; font-weight: bold;">
+                           Reset Password
+                        </a>
+                    </div>
+                    <p><strong>This link will expire in 15 minutes.</strong></p>
+                    <p>If you didn't request this, you can safely ignore this email.</p>
                 </div>
-                <p><strong>This link will expire in 15 minutes.</strong></p>
-                <p>If you didn't request this, please ignore this email or contact support if you have concerns.</p>
-                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-                <p style="color: #666; font-size: 12px;">
-                    For security reasons, this link can only be used once.
-                </p>
-                </div>
-            `
+            `,
+        }).catch((err) => {
+            console.error("Forgot password email failed:", err.message);
         });
 
-        res.status(200).json({ 
+        return res.status(200).json({
             success: true,
-            message: "Password reset email sent successfully.",
-            data: { email: user.email }
+            message:
+                "If an account exists with this email, a password reset link will be sent.",
         });
-
     } catch (error) {
         console.error("Error in forgotPassword controller:", error);
-        res.status(500).json({ 
+        return res.status(500).json({
             success: false,
-            message: "Failed to process password reset request" 
+            message: "Failed to process password reset request",
         });
     }
 };
 
+
 export const resetPassword = async (req, res) => {
-    let { token } = req.params;
-    const { token: bodyToken, password, confirmPassword } = req.body;
-
-    if (!token && bodyToken) {
-        token = bodyToken;
-    }
-
-    console.log("Reset Password Token:", token);
-    console.log("Request Body:", req.body);
+    const { token } = req.params;
+    const { password, confirmPassword } = req.body;
 
     try {
-        // Validation - Check all required fields
         if (!token || !password || !confirmPassword) {
-            console.log("Missing fields:", { token, password, confirmPassword });
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: "All fields are required" 
+                message: "All fields are required",
             });
         }
 
         if (password !== confirmPassword) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: "Passwords do not match" 
+                message: "Passwords do not match",
             });
         }
 
         if (password.length < 6) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: "Password must be at least 6 characters" 
+                message: "Password must be at least 6 characters",
             });
         }
 
         const hashedToken = crypto
-        .createHash("sha256")
-        .update(token)
-        .digest("hex");
-
-        console.log("Hashed token:", hashedToken);
+            .createHash("sha256")
+            .update(token)
+            .digest("hex");
 
         const user = await User.findOne({
             resetPasswordToken: hashedToken,
-            resetPasswordExpires: { $gt: Date.now() }
+            resetPasswordExpires: { $gt: Date.now() },
         });
 
-        console.log("User found:", user ? user.email : "No user found");
-
         if (!user) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: "Invalid or expired reset token" 
+                message: "Invalid or expired reset token",
             });
         }
 
         const isSamePassword = await bcrypt.compare(password, user.password);
         if (isSamePassword) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: "New password cannot be the same as current password" 
+                message: "New password cannot be the same as current password",
             });
         }
 
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         user.password = hashedPassword;
         user.resetPasswordToken = undefined;
         user.resetPasswordExpires = undefined;
         await user.save();
 
-        console.log("Password reset successful for:", user.email);
-
-        try {
-            await sendEmail({
-                toEmail: user.email,
-                toName: user.fullName,
-                subject: 'Password Changed Successfully',
-                htmlContent: `
+        sendEmail({
+            toEmail: user.email,
+            toName: user.fullName,
+            subject: "Password Changed Successfully",
+            htmlContent: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2>Password Updated Successfully</h2>
                     <p>Hello ${user.fullName},</p>
                     <p>Your password has been changed successfully.</p>
-                    <p>If you did not make this change, please contact our support team immediately.</p>
-                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-                    <p style="color: #666; font-size: 12px;">
-                    Security notice: This is a confirmation that your password was changed.
-                    </p>
+                    <p>If you did not make this change, please contact support immediately.</p>
                 </div>
-                `
-            });
-            console.log("Confirmation email sent to:", user.email);
-        } catch (emailError) {
-            console.error("Failed to send confirmation email:", emailError);
-        }
-
-        res.status(200).json({ 
-            success: true,
-            message: "Password reset successful. You can now log in with your new password.",
-            data: { email: user.email }
+            `,
+        }).catch(err => {
+            console.error("Password change email failed:", err.message);
         });
 
+        return res.status(200).json({
+            success: true,
+            message:
+                "Password reset successful. You can now log in with your new password.",
+        });
     } catch (error) {
         console.error("Error in resetPassword controller:", error);
-        res.status(500).json({ 
+        return res.status(500).json({
             success: false,
-            message: "Failed to reset password" 
+            message: "Failed to reset password",
         });
     }
 };
 
-// Check Verification Status
 export const checkVerificationStatus = async (req, res) => {
     try {
         const { email } = req.query;
