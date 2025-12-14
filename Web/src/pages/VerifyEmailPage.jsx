@@ -4,7 +4,7 @@ import { Loader } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import toast from "react-hot-toast";
 
-export default function VerifyEmailPage() {
+const VerifyEmailPage = () {
     const { token } = useParams();
     const { verifyEmailLogin, authUser } = useAuthStore();
 
@@ -61,3 +61,5 @@ export default function VerifyEmailPage() {
         </div>
     );
 }
+
+export default VerifyEmailPage;
