@@ -1,5 +1,5 @@
 import { useChatStore } from "../store/useChatStore";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
@@ -12,6 +12,16 @@ const formatMessageDate = (dateStr) => {
     const date = new Date(dateStr);
     const options = { day: "numeric", month: "short", year: "numeric" };
     return date.toLocaleDateString("en-US", options);
+};
+
+const isToday = (dateStr) => {
+    const today = new Date();
+    const date = new Date(dateStr);
+    return (
+        today.getFullYear() === date.getFullYear() &&
+        today.getMonth() === date.getMonth() &&
+        today.getDate() === date.getDate()
+    );
 };
 
 const ChatContainer = () => {
@@ -32,7 +42,6 @@ const ChatContainer = () => {
 
     const messageEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
-    const [stickyDate, setStickyDate] = useState("");
 
     useEffect(() => {
         if (!selectedUser?._id) return;
@@ -77,16 +86,6 @@ const ChatContainer = () => {
                 const newHeight = container.scrollHeight;
                 container.scrollTop = newHeight - prevHeight;
             }
-
-            const children = Array.from(container.children).filter((c) =>
-                c.dataset?.messageDate
-            );
-            for (let child of children) {
-                const rect = child.getBoundingClientRect();
-                if (rect.top < container.getBoundingClientRect().top + 50) {
-                    setStickyDate(child.dataset.messageDate);
-                }
-            }
         };
 
         container.addEventListener("scroll", handleScroll);
@@ -111,13 +110,6 @@ const ChatContainer = () => {
         <div className="flex flex-col h-full bg-base-100">
             <ChatHeader />
 
-            {/* Sticky date */}
-            {stickyDate && (
-                <div className="sticky top-0 z-10 text-center bg-base-100 py-1 text-sm text-base-content/50 border-b border-base-300">
-                    {stickyDate}
-                </div>
-            )}
-
             <div
                 ref={messagesContainerRef}
                 className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 bg-base-200/10"
@@ -135,12 +127,14 @@ const ChatContainer = () => {
                 ) : (
                     messages.map((message) => {
                         const messageDate = formatMessageDate(message.createdAt);
-                        const showDateSeparator = messageDate !== lastMessageDate;
+                        const showDateBubble =
+                            !isToday(message.createdAt) && messageDate !== lastMessageDate;
                         lastMessageDate = messageDate;
 
                         return (
-                            <div key={message._id} data-message-date={messageDate}>
-                                {showDateSeparator && !stickyDate && (
+                            <div key={message._id}>
+                                {/* Date bubble for older messages */}
+                                {showDateBubble && (
                                     <div className="text-center text-sm text-base-content/50 my-2">
                                         {messageDate}
                                     </div>
