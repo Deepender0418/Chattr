@@ -22,7 +22,7 @@ export const useChatStore = create((set, get) => ({
         try {
             const res = await axiosInstance.get("/messages/users");
             set({ users: res.data });
-        } catch (err) {
+        } catch {
             toast.error("Failed to load users");
         } finally {
             set({ isUsersLoading: false });
@@ -56,26 +56,43 @@ export const useChatStore = create((set, get) => ({
                 isMessagesLoading: false,
                 isLoadingMore: false,
             }));
-        } catch (err) {
+        } catch {
             toast.error("Failed to load messages");
             set({ isMessagesLoading: false, isLoadingMore: false });
         }
     },
 
-    sendMessage: async (messageData) => {
-        const { selectedUser } = get();
-        try {
-            const res = await axiosInstance.post(
-                `/messages/send/${selectedUser._id}`,
-                messageData
-            );
+    addOptimisticMessage: (msg) =>
+        set((state) => ({
+            messages: [
+                ...state.messages,
+                {
+                    ...msg,
+                    seen: false,
+                    createdAt: new Date().toISOString(),
+                    optimistic: true,
+                },
+            ],
+        })),
 
-            set((state) => ({
-                messages: [...state.messages, res.data],
-            }));
-        } catch {
-            toast.error("Failed to send message");
-        }
+    replaceOptimisticMessage: (tempId, realMessage) =>
+        set((state) => ({
+            messages: state.messages.map((m) =>
+                m._id === tempId ? realMessage : m
+            ),
+        })),
+
+    sendMessage: async ({ tempId, text, media }) => {
+        const { selectedUser } = get();
+
+        const res = await axiosInstance.post(
+            `/messages/send/${selectedUser._id}`,
+            { text, media }
+        );
+
+        get().replaceOptimisticMessage(tempId, res.data);
+
+        return res.data;
     },
 
     subscribeToMessages: () => {
@@ -86,7 +103,7 @@ export const useChatStore = create((set, get) => ({
         socket.off("messagesSeen");
 
         socket.on("newMessage", (newMessage) => {
-            const { selectedUser } = get();
+            const { selectedUser, messages } = get();
             if (
                 !selectedUser ||
                 ![newMessage.senderId, newMessage.receiverId].includes(
@@ -95,12 +112,11 @@ export const useChatStore = create((set, get) => ({
             )
                 return;
 
-            set((state) => {
-                if (state.messages.some((m) => m._id === newMessage._id))
-                    return state;
+            if (messages.some((m) => m._id === newMessage._id)) return;
 
-                return { messages: [...state.messages, newMessage] };
-            });
+            set((state) => ({
+                messages: [...state.messages, newMessage],
+            }));
 
             if (newMessage.senderId === selectedUser._id) {
                 get().markMessagesAsSeen(selectedUser._id);
