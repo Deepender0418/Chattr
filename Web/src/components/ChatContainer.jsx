@@ -8,6 +8,12 @@ import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
 import { Check, CheckCheck } from "lucide-react";
 
+const formatMessageDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const options = { day: "numeric", month: "short", year: "numeric" };
+    return date.toLocaleDateString("en-US", options);
+};
+
 const ChatContainer = () => {
     const {
         messages,
@@ -74,7 +80,6 @@ const ChatContainer = () => {
         }
     }, [messages, selectedUser]);
 
-
     useEffect(() => {
         const container = messagesContainerRef.current;
         if (!container) return;
@@ -104,7 +109,6 @@ const ChatContainer = () => {
         return () => container.removeEventListener("scroll", handleScroll);
     }, [hasMore, isLoadingMore, nextCursor, selectedUser]);
 
-
     if (isMessagesLoading) {
         return (
             <div className="flex flex-col h-full bg-base-100">
@@ -116,6 +120,8 @@ const ChatContainer = () => {
             </div>
         );
     }
+
+    let lastMessageDate = null;
 
     return (
         <div className="flex flex-col h-full bg-base-100">
@@ -130,75 +136,88 @@ const ChatContainer = () => {
                         Start a conversation with {selectedUser.fullName}
                     </div>
                 ) : (
-                    messages.map((message) => (
-                        <div
-                            key={message._id}
-                            className={`chat ${
-                                message.senderId === authUser._id
-                                    ? "chat-end"
-                                    : "chat-start"
-                            }`}
-                        >
-                            <div className="chat-image avatar">
-                                <div className="size-10 rounded-full overflow-hidden">
-                                    <img
-                                        src={
+                    messages.map((message) => {
+                        const messageDate = formatMessageDate(message.createdAt);
+                        const showDateSeparator = messageDate !== lastMessageDate;
+                        lastMessageDate = messageDate;
+
+                        return (
+                            <div key={message._id}>
+                                {showDateSeparator && (
+                                    <div className="text-center text-sm text-base-content/50 my-2">
+                                        {messageDate}
+                                    </div>
+                                )}
+
+                                <div
+                                    className={`chat ${
+                                        message.senderId === authUser._id
+                                            ? "chat-end"
+                                            : "chat-start"
+                                    }`}
+                                >
+                                    <div className="chat-image avatar">
+                                        <div className="size-10 rounded-full overflow-hidden">
+                                            <img
+                                                src={
+                                                    message.senderId === authUser._id
+                                                        ? authUser.profilePic || "/avatar.png"
+                                                        : selectedUser.profilePic || "/avatar.png"
+                                                }
+                                                alt="profile"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="chat-header flex items-center gap-2">
+                                        <span className="font-semibold">
+                                            {message.senderId === authUser._id
+                                                ? "You"
+                                                : selectedUser.fullName}
+                                        </span>
+                                        <time className="text-xs opacity-60">
+                                            {formatMessageTime(message.createdAt)}
+                                        </time>
+
+                                        {message.senderId === authUser._id && (
+                                            <span>
+                                                {message.seen ? (
+                                                    <CheckCheck className="size-4 text-primary" />
+                                                ) : (
+                                                    <Check className="size-4" />
+                                                )}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <div
+                                        className={`chat-bubble flex flex-col gap-2 max-w-lg ${
                                             message.senderId === authUser._id
-                                                ? authUser.profilePic || "/avatar.png"
-                                                : selectedUser.profilePic || "/avatar.png"
-                                        }
-                                        alt="profile"
-                                    />
+                                                ? "bg-primary text-primary-content"
+                                                : "bg-base-300"
+                                        }`}
+                                    >
+                                        {/* MEDIA */}
+                                        {message.media && (
+                                            <img
+                                                src={message.media}
+                                                alt="Attachment"
+                                                className="max-w-full rounded-lg"
+                                                loading="lazy"
+                                            />
+                                        )}
+
+                                        {/* TEXT */}
+                                        {message.text && (
+                                            <p className="whitespace-pre-wrap break-words">
+                                                {message.text}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-
-                            <div className="chat-header flex items-center gap-2">
-                                <span className="font-semibold">
-                                    {message.senderId === authUser._id
-                                        ? "You"
-                                        : selectedUser.fullName}
-                                </span>
-                                <time className="text-xs opacity-60">
-                                    {formatMessageTime(message.createdAt)}
-                                </time>
-
-                                {message.senderId === authUser._id && (
-                                    <span>
-                                        {message.seen ? (
-                                            <CheckCheck className="size-4 text-primary" />
-                                        ) : (
-                                            <Check className="size-4" />
-                                        )}
-                                    </span>
-                                )}
-                            </div>
-
-                            <div
-                                className={`chat-bubble flex flex-col gap-2 max-w-lg ${
-                                    message.senderId === authUser._id
-                                        ? "bg-primary text-primary-content"
-                                        : "bg-base-300"
-                                }`}
-                            >
-                                {/* MEDIA */}
-                                {message.media && (
-                                    <img
-                                        src={message.media}
-                                        alt="Attachment"
-                                        className="max-w-full rounded-lg"
-                                        loading="lazy"
-                                    />
-                                )}
-                            
-                                {/* TEXT */}
-                                {message.text && (
-                                    <p className="whitespace-pre-wrap break-words">
-                                        {message.text}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    ))
+                        );
+                    })
                 )}
                 <div ref={messageEndRef} />
             </div>
