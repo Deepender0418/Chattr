@@ -1,12 +1,12 @@
 import { useChatStore } from "../store/useChatStore";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
-import { Check, CheckCheck } from "lucide-react";
+import { Check, CheckCheck, Loader2 } from "lucide-react";
 
 const formatMessageDate = (dateStr) => {
     const date = new Date(dateStr);
@@ -32,12 +32,11 @@ const ChatContainer = () => {
 
     const messageEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
-    const hasScrolledRef = useRef(false);
+    const [stickyDate, setStickyDate] = useState("");
 
     useEffect(() => {
         if (!selectedUser?._id) return;
 
-        hasScrolledRef.current = false;
         loadMessages(selectedUser._id);
         subscribeToMessages();
 
@@ -56,28 +55,13 @@ const ChatContainer = () => {
         }
     }, [isMessagesLoading]);
 
-    const isNearBottom = () => {
-        const el = messagesContainerRef.current;
-        if (!el) return false;
-        return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
-    };
-
-    useEffect(() => {
-        if (isNearBottom()) {
-            scrollToBottom();
-        }
-    }, [messages.length]);
-
     useEffect(() => {
         if (!selectedUser?._id) return;
 
         const hasUnseen = messages.some(
             (msg) => msg.senderId === selectedUser._id && !msg.seen
         );
-
-        if (hasUnseen) {
-            markMessagesAsSeen(selectedUser._id);
-        }
+        if (hasUnseen) markMessagesAsSeen(selectedUser._id);
     }, [messages, selectedUser]);
 
     useEffect(() => {
@@ -85,17 +69,7 @@ const ChatContainer = () => {
         if (!container) return;
 
         const handleScroll = async () => {
-            if (!hasScrolledRef.current) {
-                hasScrolledRef.current = true;
-                return;
-            }
-
-            if (
-                container.scrollTop <= 50 &&
-                hasMore &&
-                !isLoadingMore &&
-                selectedUser?._id
-            ) {
+            if (container.scrollTop <= 50 && hasMore && !isLoadingMore && selectedUser?._id) {
                 const prevHeight = container.scrollHeight;
 
                 await loadMessages(selectedUser._id, nextCursor);
@@ -103,11 +77,21 @@ const ChatContainer = () => {
                 const newHeight = container.scrollHeight;
                 container.scrollTop = newHeight - prevHeight;
             }
+
+            const children = Array.from(container.children).filter((c) =>
+                c.dataset?.messageDate
+            );
+            for (let child of children) {
+                const rect = child.getBoundingClientRect();
+                if (rect.top < container.getBoundingClientRect().top + 50) {
+                    setStickyDate(child.dataset.messageDate);
+                }
+            }
         };
 
         container.addEventListener("scroll", handleScroll);
         return () => container.removeEventListener("scroll", handleScroll);
-    }, [hasMore, isLoadingMore, nextCursor, selectedUser]);
+    }, [hasMore, isLoadingMore, nextCursor, selectedUser, messages]);
 
     if (isMessagesLoading) {
         return (
@@ -127,10 +111,23 @@ const ChatContainer = () => {
         <div className="flex flex-col h-full bg-base-100">
             <ChatHeader />
 
+            {/* Sticky date */}
+            {stickyDate && (
+                <div className="sticky top-0 z-10 text-center bg-base-100 py-1 text-sm text-base-content/50 border-b border-base-300">
+                    {stickyDate}
+                </div>
+            )}
+
             <div
                 ref={messagesContainerRef}
                 className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 bg-base-200/10"
             >
+                {isLoadingMore && (
+                    <div className="flex justify-center mb-2">
+                        <Loader2 className="animate-spin size-6 text-primary" />
+                    </div>
+                )}
+
                 {messages.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-base-content/60">
                         Start a conversation with {selectedUser.fullName}
@@ -142,8 +139,8 @@ const ChatContainer = () => {
                         lastMessageDate = messageDate;
 
                         return (
-                            <div key={message._id}>
-                                {showDateSeparator && (
+                            <div key={message._id} data-message-date={messageDate}>
+                                {showDateSeparator && !stickyDate && (
                                     <div className="text-center text-sm text-base-content/50 my-2">
                                         {messageDate}
                                     </div>
@@ -197,7 +194,6 @@ const ChatContainer = () => {
                                                 : "bg-base-300"
                                         }`}
                                     >
-                                        {/* MEDIA */}
                                         {message.media && (
                                             <img
                                                 src={message.media}
@@ -207,7 +203,6 @@ const ChatContainer = () => {
                                             />
                                         )}
 
-                                        {/* TEXT */}
                                         {message.text && (
                                             <p className="whitespace-pre-wrap break-words">
                                                 {message.text}
@@ -219,6 +214,7 @@ const ChatContainer = () => {
                         );
                     })
                 )}
+
                 <div ref={messageEndRef} />
             </div>
 
