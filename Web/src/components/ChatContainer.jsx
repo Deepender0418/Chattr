@@ -10,8 +10,11 @@ import { Check, CheckCheck, Loader2 } from "lucide-react";
 
 const formatMessageDate = (dateStr) => {
     const date = new Date(dateStr);
-    const options = { day: "numeric", month: "short", year: "numeric" };
-    return date.toLocaleDateString("en-US", options);
+    return date.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+    });
 };
 
 const isToday = (dateStr) => {
@@ -43,6 +46,7 @@ const ChatContainer = () => {
     const messageEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
 
+    const isNearBottomRef = useRef(true);
     const [stickyDate, setStickyDate] = useState("");
 
     useEffect(() => {
@@ -67,11 +71,27 @@ const ChatContainer = () => {
     }, [isMessagesLoading]);
 
     useEffect(() => {
+        if (!messages.length) return;
+
+        const lastMessage = messages[messages.length - 1];
+
+        if (lastMessage.senderId === authUser._id) {
+            scrollToBottom();
+            return;
+        }
+
+        if (isNearBottomRef.current) {
+            scrollToBottom();
+        }
+    }, [messages]);
+
+    useEffect(() => {
         if (!selectedUser?._id) return;
 
         const hasUnseen = messages.some(
             (msg) => msg.senderId === selectedUser._id && !msg.seen
         );
+
         if (hasUnseen) markMessagesAsSeen(selectedUser._id);
     }, [messages, selectedUser]);
 
@@ -80,22 +100,35 @@ const ChatContainer = () => {
         if (!container) return;
 
         const handleScroll = async () => {
+            const threshold = 120;
+            const distanceFromBottom =
+                container.scrollHeight -
+                container.scrollTop -
+                container.clientHeight;
+
+            isNearBottomRef.current = distanceFromBottom < threshold;
+
             const children = Array.from(container.children).filter(
-                (el) => el.dataset && el.dataset.date
+                (el) => el.dataset?.timestamp
             );
+
             for (const child of children) {
                 const rect = child.getBoundingClientRect();
-                if (rect.bottom >= container.getBoundingClientRect().top) {
-                    setStickyDate(child.dataset.date);
+                if (rect.bottom >= container.getBoundingClientRect().top + 10) {
+                    const dateStr = child.dataset.timestamp;
+                    setStickyDate(isToday(dateStr) ? "" : formatMessageDate(dateStr));
                     break;
                 }
             }
 
-            if (container.scrollTop <= 50 && hasMore && !isLoadingMore && selectedUser?._id) {
+            if (
+                container.scrollTop <= 50 &&
+                hasMore &&
+                !isLoadingMore &&
+                selectedUser?._id
+            ) {
                 const prevHeight = container.scrollHeight;
-
                 await loadMessages(selectedUser._id, nextCursor);
-
                 const newHeight = container.scrollHeight;
                 container.scrollTop = newHeight - prevHeight;
             }
@@ -103,7 +136,7 @@ const ChatContainer = () => {
 
         container.addEventListener("scroll", handleScroll);
         return () => container.removeEventListener("scroll", handleScroll);
-    }, [hasMore, isLoadingMore, nextCursor, selectedUser, messages]);
+    }, [hasMore, isLoadingMore, nextCursor, selectedUser]);
 
     if (isMessagesLoading) {
         return (
@@ -121,8 +154,9 @@ const ChatContainer = () => {
         <div className="flex flex-col h-full bg-base-100 relative">
             <ChatHeader />
 
+            {/* Sticky date bubble */}
             {stickyDate && (
-                <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10 px-4 py-1 rounded-lg bg-base-300 text-sm text-base-content/70">
+                <div className="absolute top-24 left-1/2 -translate-x-1/2 z-10 px-4 py-1 bg-base-300 text-sm text-base-content/70 shadow-md">
                     {stickyDate}
                 </div>
             )}
@@ -137,91 +171,69 @@ const ChatContainer = () => {
                     </div>
                 )}
 
-                {messages.length === 0 ? (
-                    <div className="flex items-center justify-center h-full text-base-content/60">
-                        Start a conversation with {selectedUser.fullName}
-                    </div>
-                ) : (
-                    messages.map((message) => {
-                        const messageDate = formatMessageDate(message.createdAt);
-                        const showDateBubble = !isToday(message.createdAt);
-
-                        return (
-                            <div key={message._id} data-date={showDateBubble ? messageDate : ""}>
-                                {showDateBubble && (
-                                    <div className="text-center text-sm text-base-content/50 my-2">
-                                        {messageDate}
-                                    </div>
-                                )}
-
-                                <div
-                                    className={`chat ${
-                                        message.senderId === authUser._id
-                                            ? "chat-end"
-                                            : "chat-start"
-                                    }`}
-                                >
-                                    <div className="chat-image avatar">
-                                        <div className="size-10 rounded-full overflow-hidden">
-                                            <img
-                                                src={
-                                                    message.senderId === authUser._id
-                                                        ? authUser.profilePic || "/avatar.png"
-                                                        : selectedUser.profilePic || "/avatar.png"
-                                                }
-                                                alt="profile"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="chat-header flex items-center gap-2">
-                                        <span className="font-semibold">
-                                            {message.senderId === authUser._id
-                                                ? "You"
-                                                : selectedUser.fullName}
-                                        </span>
-                                        <time className="text-xs opacity-60">
-                                            {formatMessageTime(message.createdAt)}
-                                        </time>
-
-                                        {message.senderId === authUser._id && (
-                                            <span>
-                                                {message.seen ? (
-                                                    <CheckCheck className="size-4 text-primary" />
-                                                ) : (
-                                                    <Check className="size-4" />
-                                                )}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    <div
-                                        className={`chat-bubble flex flex-col gap-2 max-w-lg ${
+                {messages.map((message) => (
+                    <div key={message._id} data-timestamp={message.createdAt}>
+                        <div
+                            className={`chat ${
+                                message.senderId === authUser._id
+                                    ? "chat-end"
+                                    : "chat-start"
+                            }`}
+                        >
+                            <div className="chat-image avatar">
+                                <div className="size-10 overflow-hidden">
+                                    <img
+                                        src={
                                             message.senderId === authUser._id
-                                                ? "bg-primary text-primary-content"
-                                                : "bg-base-300"
-                                        }`}
-                                    >
-                                        {message.media && (
-                                            <img
-                                                src={message.media}
-                                                alt="Attachment"
-                                                className="max-w-full rounded-lg"
-                                                loading="lazy"
-                                            />
-                                        )}
-
-                                        {message.text && (
-                                            <p className="whitespace-pre-wrap break-words">
-                                                {message.text}
-                                            </p>
-                                        )}
-                                    </div>
+                                                ? authUser.profilePic || "/avatar.png"
+                                                : selectedUser.profilePic || "/avatar.png"
+                                        }
+                                        alt="profile"
+                                    />
                                 </div>
                             </div>
-                        );
-                    })
-                )}
+
+                            <div className="chat-header flex items-center gap-2">
+                                <span className="font-semibold">
+                                    {message.senderId === authUser._id
+                                        ? "You"
+                                        : selectedUser.fullName}
+                                </span>
+                                <time className="text-xs opacity-60">
+                                    {formatMessageTime(message.createdAt)}
+                                </time>
+
+                                {message.senderId === authUser._id && (
+                                    <span>
+                                        {message.seen ? (
+                                            <CheckCheck className="size-4 text-primary" />
+                                        ) : (
+                                            <Check className="size-4" />
+                                        )}
+                                    </span>
+                                )}
+                            </div>
+
+                            <div
+                                className={`chat-bubble max-w-[75%] whitespace-pre-wrap break-words ${
+                                    message.senderId === authUser._id
+                                        ? "bg-primary text-primary-content"
+                                        : "bg-base-300"
+                                }`}
+                            >
+                                {message.media && (
+                                    <img
+                                        src={message.media}
+                                        alt="Attachment"
+                                        className="max-w-full"
+                                        loading="lazy"
+                                    />
+                                )}
+                                {message.text}
+                            </div>
+                        </div>
+                    </div>
+                ))}
 
                 <div ref={messageEndRef} />
             </div>
