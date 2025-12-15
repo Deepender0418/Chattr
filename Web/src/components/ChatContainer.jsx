@@ -1,5 +1,5 @@
 import { useChatStore } from "../store/useChatStore";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
@@ -43,6 +43,8 @@ const ChatContainer = () => {
     const messageEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
 
+    const [stickyDate, setStickyDate] = useState("");
+
     useEffect(() => {
         if (!selectedUser?._id) return;
 
@@ -78,6 +80,17 @@ const ChatContainer = () => {
         if (!container) return;
 
         const handleScroll = async () => {
+            const children = Array.from(container.children).filter(
+                (el) => el.dataset && el.dataset.date
+            );
+            for (const child of children) {
+                const rect = child.getBoundingClientRect();
+                if (rect.bottom >= container.getBoundingClientRect().top) {
+                    setStickyDate(child.dataset.date);
+                    break;
+                }
+            }
+
             if (container.scrollTop <= 50 && hasMore && !isLoadingMore && selectedUser?._id) {
                 const prevHeight = container.scrollHeight;
 
@@ -104,11 +117,15 @@ const ChatContainer = () => {
         );
     }
 
-    let lastMessageDate = null;
-
     return (
-        <div className="flex flex-col h-full bg-base-100">
+        <div className="flex flex-col h-full bg-base-100 relative">
             <ChatHeader />
+
+            {stickyDate && (
+                <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10 px-4 py-1 rounded-lg bg-base-300 text-sm text-base-content/70">
+                    {stickyDate}
+                </div>
+            )}
 
             <div
                 ref={messagesContainerRef}
@@ -127,13 +144,10 @@ const ChatContainer = () => {
                 ) : (
                     messages.map((message) => {
                         const messageDate = formatMessageDate(message.createdAt);
-                        const showDateBubble =
-                            !isToday(message.createdAt) && messageDate !== lastMessageDate;
-                        lastMessageDate = messageDate;
+                        const showDateBubble = !isToday(message.createdAt);
 
                         return (
-                            <div key={message._id}>
-                                {/* Date bubble for older messages */}
+                            <div key={message._id} data-date={showDateBubble ? messageDate : ""}>
                                 {showDateBubble && (
                                     <div className="text-center text-sm text-base-content/50 my-2">
                                         {messageDate}
