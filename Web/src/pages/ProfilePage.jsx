@@ -227,23 +227,6 @@ const ProfilePage = () => {
                                 {isEditing && (
                                     <div className="flex gap-3 pt-4 border-t border-base-300">
                                         <button
-                                            onClick={handleSaveProfile}
-                                            className="btn btn-success flex-1 gap-2"
-                                            disabled={isUpdatingProfile}
-                                        >
-                                            {isUpdatingProfile ? (
-                                                <>
-                                                    <div className="loading loading-spinner loading-sm"></div>
-                                                    Saving...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <CheckCircle className="size-4" />
-                                                    Save Changes
-                                                </>
-                                            )}
-                                        </button>
-                                        <button
                                             onClick={handleCancelEdit}
                                             className="btn btn-ghost flex-1"
                                             disabled={isUpdatingProfile}
