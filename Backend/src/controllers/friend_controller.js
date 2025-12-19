@@ -86,6 +86,21 @@ export const sendFriendRequest = async (req, res) => {
             return res.status(400).json({ success: false, message: "Already friends" });
         }
 
+        const existing = await FriendRequest.findOne({
+            $or: [
+                { from: meId, to: targetUser._id },
+                { from: targetUser._id, to: meId },
+            ],
+            status: "pending",
+        });
+
+        if (existing) {
+            return res.status(400).json({
+                success: false,
+                message: "Friend request already exists",
+            });
+        }
+
         const request = await FriendRequest.findOneAndUpdate(
         {
             $or: [
@@ -115,19 +130,53 @@ export const sendFriendRequest = async (req, res) => {
 export const getFriendRequests = async (req, res) => {
     try {
         const meId = req.user._id;
-        const requests = await FriendRequest.find({
-            to: meId,
-            status: "pending",
-        })
-        .populate("from", "fullName userName profilePic friendCode")
-        .sort({ createdAt: -1 });
 
-        res.json({ success: true, data: requests });
+        const [sent, received] = await Promise.all([
+            FriendRequest.find({
+                from: meId,
+                status: "pending",
+            })
+            .populate("to", "fullName userName profilePic friendCode")
+            .sort({ createdAt: -1 }),
+
+            FriendRequest.find({
+                to: meId,
+                status: "pending",
+            })
+            .populate("from", "fullName userName profilePic friendCode")
+            .sort({ createdAt: -1 }),
+        ]);
+
+        res.json({
+            success: true,
+            data: {
+                sent: sent.map(r => ({
+                    requestId: r._id,
+                    _id: r.to._id,
+                    fullName: r.to.fullName,
+                    userName: r.to.userName,
+                    profilePic: r.to.profilePic,
+                    friendCode: r.to.friendCode,
+                })),
+                received: received.map(r => ({
+                    requestId: r._id,
+                    _id: r.from._id,
+                    fullName: r.from.fullName,
+                    userName: r.from.userName,
+                    profilePic: r.from.profilePic,
+                    friendCode: r.from.friendCode,
+                })),
+            },
+        });
     } catch (error) {
         console.error("Error in getFriendRequests:", error);
-        res.status(500).json({ success: false, message: "Failed to load requests" });
+        res.status(500).json({
+            success: false,
+            message: "Failed to load requests",
+        });
     }
 };
+
 
 export const respondFriendRequest = async (req, res) => {
     try {
@@ -162,6 +211,8 @@ export const respondFriendRequest = async (req, res) => {
         await User.findByIdAndUpdate(request.to, {
             $addToSet: { friends: request.from },
         });
+        
+        await FriendRequest.findByIdAndDelete(requestId);
 
         res.json({ success: true, message: "Request accepted" });
     } catch (error) {
