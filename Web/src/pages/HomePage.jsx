@@ -19,8 +19,19 @@ const HomePage = () => {
                                 isExpanded={isSidebarExpanded}
                             />
                             
-                            {/* Main content */}
-                            <div className="flex-1">
+                            {/* Blur overlay for mobile */}
+                            {isSidebarExpanded && (
+                                <div 
+                                    className="lg:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+                                    onClick={() => setIsSidebarExpanded(false)}
+                                />
+                            )}
+                            
+                            {/* Main content with blur effect */}
+                            <div className={`
+                                flex-1 transition-all duration-300 relative
+                                ${isSidebarExpanded ? 'lg:blur-0 blur-sm' : 'blur-0'}
+                            `}>
                                 {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
                             </div>
                         </div>
