@@ -6,7 +6,8 @@ import { useAuthStore } from "./useAuthStore";
 
 export const useFriendStore = create((set, get) => ({
     friends: [],
-    requests: [],
+    sentRequests: [],
+    receivedRequests: [],
     searchResult: null,
     isSearching: false,
     isLoadingFriends: false,
@@ -28,7 +29,11 @@ export const useFriendStore = create((set, get) => ({
         set({ isLoadingRequests: true });
         try {
             const res = await axiosInstance.get("/friends/requests");
-            set({ requests: res.data?.data || [] });
+
+            set({
+                sentRequests: res.data?.data?.sent || [],
+                receivedRequests: res.data?.data?.received || [],
+            });
         } catch (error) {
             toast.error(error.response?.data?.message || "Failed to load requests");
         } finally {
@@ -95,4 +100,3 @@ export const useFriendStore = create((set, get) => ({
         }
     },
 }));
-
