@@ -1,180 +1,31 @@
-import { Link } from "react-router-dom";
-import { useAuthStore } from "../store/useAuthStore";
-import { LogOut, MessageSquare, Moon, Sun, User, AlertTriangle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { MessageSquare, Users } from "lucide-react";
 
-const Navbar = () => {
-    const { logout, authUser } = useAuthStore();
-    const [darkMode, setDarkMode] = useState(false);
-    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-
-    useEffect(() => {
-        const savedTheme = localStorage.getItem('theme');
-        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        
-        if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
-            setDarkMode(true);
-            document.documentElement.setAttribute('data-theme', 'dark');
-        } else {
-            setDarkMode(false);
-            document.documentElement.setAttribute('data-theme', 'light');
-        }
-    }, []);
-
-    const toggleDarkMode = () => {
-        const newDarkMode = !darkMode;
-        setDarkMode(newDarkMode);
-        
-        if (newDarkMode) {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'light');
-            localStorage.setItem('theme', 'light');
-        }
-    };
-
-    const handleLogoutClick = () => {
-        setShowLogoutConfirm(true);
-    };
-
-    const handleConfirmLogout = () => {
-        setShowLogoutConfirm(false);
-        logout();
-    };
-
-    const handleCancelLogout = () => {
-        setShowLogoutConfirm(false);
-    };
-
+const NoChatSelected = () => {
     return (
-        <>
-            <header
-                className="bg-base-100 border-b border-base-300 fixed w-full top-0 z-50 
-                backdrop-blur-lg bg-base-100/80"
-            >
-                <div className="container mx-auto px-4 h-16">
-                    <div className="flex items-center justify-between h-full">
-                        <div className="flex items-center gap-8">
-                            <Link to="/" className="flex items-center gap-2.5 hover:opacity-80 transition-all group">
-                                <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                                    <MessageSquare className="w-5 h-5 text-primary" />
-                                </div>
-                                <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                                    Ch@ttr
-                                </h1>
-                            </Link>
+        <div className="flex flex-col items-center justify-center h-full p-4 sm:p-6 lg:p-12 bg-gradient-to-br from-base-100 via-base-100 to-base-200/10">
+            <div className="max-w-2xl sm:max-w-3xl lg:max-w-4xl text-center space-y-6 sm:space-y-8">
+                <div className="flex justify-center">
+                    <div className="relative">
+                        <div className="size-16 sm:size-20 lg:size-28 bg-primary/10 flex items-center justify-center animate-pulse rounded-2xl">
+                            <MessageSquare className="size-7 sm:size-8 lg:size-12 text-primary" />
                         </div>
-
-                        <div className="flex items-center gap-2">
-                            {/* Dark/Light Mode Toggle */}
-                            <button
-                                onClick={toggleDarkMode}
-                                className="btn btn-sm gap-2 transition-all duration-300 hover:scale-105"
-                                aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-                            >
-                                {darkMode ? (
-                                    <>
-                                        <Sun className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Light</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Moon className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Dark</span>
-                                    </>
-                                )}
-                            </button>
-
-                            {authUser && (
-                                <>
-                                    <Link 
-                                        to={"/profile"} 
-                                        className="btn btn-sm gap-2 transition-all duration-300 hover:scale-105"
-                                    >
-                                        <User className="size-5" />
-                                        <span className="hidden sm:inline">Profile</span>
-                                    </Link>
-
-                                    <button 
-                                        className="flex gap-2 items-center btn btn-sm transition-all duration-300 hover:scale-105 hover:bg-error/20 hover:text-error" 
-                                        onClick={handleLogoutClick}
-                                    >
-                                        <LogOut className="size-5" />
-                                        <span className="hidden sm:inline">Logout</span>
-                                    </button>
-                                </>
-                            )}
+                        <div className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 size-10 sm:size-12 lg:size-16 bg-secondary rounded-full flex items-center justify-center shadow-xl">
+                            <Users className="size-4 sm:size-5 lg:size-6 text-secondary-content" />
                         </div>
                     </div>
                 </div>
-            </header>
 
-            {/* Logout Confirmation Modal */}
-            {showLogoutConfirm && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-                    <div className="bg-base-100 rounded-xl shadow-2xl border border-base-300 max-w-md w-full transform transition-all duration-300 scale-100">
-                        {/* Modal Header */}
-                        <div className="flex items-center gap-3 p-6 border-b border-base-300">
-                            <div className="p-2 bg-error/10 rounded-lg">
-                                <AlertTriangle className="size-6 text-error" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold">Confirm Logout</h3>
-                                <p className="text-base-content/60 text-sm mt-1">
-                                    Are you sure you want to logout?
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Modal Content */}
-                        <div className="p-6">
-                            <div className="flex items-center gap-3 p-4 bg-warning/10 rounded-lg border border-warning/20">
-                                <AlertTriangle className="size-5 text-warning" />
-                                <div>
-                                    <p className="text-sm font-medium text-warning">
-                                        You will be signed out of your account
-                                    </p>
-                                    <p className="text-xs text-warning/70 mt-1">
-                                        Any unsaved changes will be lost
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="mt-4 p-3 bg-base-200 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <div className="size-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center">
-                                        <User className="size-5 text-primary" />
-                                    </div>
-                                    <div>
-                                        <p className="font-medium">{authUser?.fullName}</p>
-                                        <p className="text-xs text-base-content/60">@{authUser?.userName}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Modal Footer */}
-                        <div className="flex gap-3 p-6 border-t border-base-300">
-                            <button
-                                onClick={handleCancelLogout}
-                                className="btn btn-ghost flex-1 transition-all duration-300 hover:bg-base-300"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleConfirmLogout}
-                                className="btn btn-error flex-1 gap-2 transition-all duration-300 hover:bg-error/90 hover:scale-105"
-                            >
-                                <LogOut className="size-4" />
-                                Logout
-                            </button>
-                        </div>
-                    </div>
+                <div className="space-y-3 sm:space-y-4">
+                    <h2 className="text-2xl sm:text-3xl lg:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                        Welcome to Ch@ttr!
+                    </h2>
+                    <p className="text-sm sm:text-base lg:text-xl text-base-content/70 leading-relaxed">
+                        Select a conversation from the sidebar to start chatting with your friends and colleagues
+                    </p>
                 </div>
-            )}
-        </>
+            </div>
+        </div>
     );
 };
 
-export default Navbar;
+export default NoChatSelected;
