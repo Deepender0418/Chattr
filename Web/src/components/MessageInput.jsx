@@ -14,7 +14,6 @@ const MessageInput = () => {
     const sendingRef = useRef(false);
 
     const fileInputRef = useRef(null);
-    const emojiButtonRef = useRef(null);
     const emojiPickerRef = useRef(null);
     const inputRef = useRef(null);
 
@@ -96,24 +95,51 @@ const MessageInput = () => {
         inputRef.current?.focus();
     };
 
+    useEffect(() => {
+        const handler = (e) => {
+            if (
+                emojiPickerRef.current &&
+                !emojiPickerRef.current.contains(e.target)
+            ) {
+                setShowEmojiPicker(false);
+            }
+        };
+        if (showEmojiPicker) {
+            document.addEventListener("mousedown", handler);
+        }
+        return () => document.removeEventListener("mousedown", handler);
+    }, [showEmojiPicker]);
+
     return (
-        <div className="p-3 bg-base-100 border-t border-base-300">
+        <div className="p-3 sm:p-4 bg-base-100 border-t border-base-300">
             {imagePreview && (
-                <div className="mb-2 flex items-center gap-2">
-                    <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-16 h-16 object-cover border"
-                    />
-                    <button onClick={removeImage} className="btn btn-xs btn-error">
-                        <X className="size-3" />
-                    </button>
+                <div className="mb-3 flex items-center gap-2">
+                    <div className="relative">
+                        <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="w-14 h-14 sm:w-16 sm:h-16 object-cover border border-base-300 rounded-lg"
+                        />
+                        <button
+                            onClick={removeImage}
+                            className="absolute -top-2 -right-2 btn btn-error btn-xs btn-circle hover:scale-110 transition-transform"
+                            aria-label="Remove image"
+                        >
+                            <X className="size-3" />
+                        </button>
+                    </div>
+                    <span className="text-xs text-base-content/60">Ready to send</span>
                 </div>
             )}
 
             {showEmojiPicker && (
-                <div ref={emojiPickerRef} className="absolute bottom-full mb-2 z-50">
-                    <EmojiPicker onEmojiClick={handleEmojiClick} />
+                <div
+                    ref={emojiPickerRef}
+                    className="mb-3 flex justify-center sm:justify-start z-50"
+                >
+                    <div className="scale-75 sm:scale-100 origin-bottom-left">
+                        <EmojiPicker onEmojiClick={handleEmojiClick} />
+                    </div>
                 </div>
             )}
 
@@ -122,24 +148,27 @@ const MessageInput = () => {
                     e.preventDefault();
                     enqueueMessage();
                 }}
-                className="flex gap-2 items-center"
+                className="flex gap-2 items-end"
             >
                 <button
                     type="button"
-                    ref={emojiButtonRef}
-                    className="btn btn-ghost btn-sm"
+                    className="btn btn-ghost btn-sm btn-circle flex-shrink-0 hover:bg-base-200"
                     onClick={() => setShowEmojiPicker((v) => !v)}
+                    aria-label="Emoji picker"
                 >
                     <Smile className="size-5" />
                 </button>
 
-                <input
-                    ref={inputRef}
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    className="flex-1 input input-bordered"
-                    placeholder="Type a message..."
-                />
+                <div className="flex-1 min-w-0">
+                    <input
+                        ref={inputRef}
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        className="input input-bordered input-sm w-full text-sm placeholder:text-base-content/40"
+                        placeholder="Type a message..."
+                        maxLength={2000}
+                    />
+                </div>
 
                 <input
                     ref={fileInputRef}
@@ -151,15 +180,21 @@ const MessageInput = () => {
 
                 <button
                     type="button"
-                    className="btn btn-ghost btn-sm"
+                    className="btn btn-ghost btn-sm btn-circle flex-shrink-0 hover:bg-base-200"
                     onClick={() => fileInputRef.current?.click()}
+                    aria-label="Attach image"
                 >
                     <Image className="size-5" />
                 </button>
 
-                <button type="submit" className="btn btn-primary btn-sm">
+                <button
+                    type="submit"
+                    className="btn btn-primary btn-sm btn-circle flex-shrink-0"
+                    disabled={(!text.trim() && !imagePreview) || sendingRef.current}
+                    aria-label="Send message"
+                >
                     {sendingRef.current ? (
-                        <Loader2 className="size-4 animate-spin" />
+                        <Loader2 className="size-5 animate-spin" />
                     ) : (
                         <Send className="size-5" />
                     )}
