@@ -23,10 +23,6 @@ const NoChatSelected = () => {
                         Select a conversation from the sidebar to start chatting with your friends and colleagues
                     </p>
                 </div>
-
-                <div className="pt-4 text-xs sm:text-sm text-base-content/50">
-                    <p>No chats available? Add a friend to get started!</p>
-                </div>
             </div>
         </div>
     );
