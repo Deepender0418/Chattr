@@ -62,8 +62,11 @@ const Sidebar = ({ onExpandChange, isExpanded }) => {
                     h-full bg-base-100 flex flex-col border-r border-base-300
                     transition-all duration-300 ease-in-out
                     ${isExpanded
-                        ? "fixed inset-y-0 left-0 w-80 z-50 lg:relative lg:z-0"
-                        : "w-20 lg:w-80"
+                    ? `
+                        fixed top-16 bottom-0 left-0 w-80 z-40
+                        lg:relative lg:top-0 lg:bottom-auto lg:z-0
+                    `
+                    : "w-20 lg:w-80"
                     }
                 `}
             >
