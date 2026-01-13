@@ -6,154 +6,170 @@ import { useAuthStore } from "./useAuthStore";
 const PAGE_SIZE = 20;
 
 export const useChatStore = create((set, get) => ({
-    messages: [],
-    users: [],
-    selectedUser: null,
+  messages: [],
+  users: [],
+  selectedUser: null,
 
-    isUsersLoading: false,
-    isMessagesLoading: false,
-    isLoadingMore: false,
+  isUsersLoading: false,
+  isMessagesLoading: false,
+  isLoadingMore: false,
 
-    hasMore: true,
-    nextCursor: null,
+  hasMore: true,
+  nextCursor: null,
 
-    getUsers: async () => {
-        set({ isUsersLoading: true });
-        try {
-            const res = await axiosInstance.get("/messages/users");
-            set({ users: res.data });
-        } catch {
-            toast.error("Failed to load users");
-        } finally {
-            set({ isUsersLoading: false });
-        }
-    },
+  getUsers: async () => {
+    set({ isUsersLoading: true });
+    try {
+      const res = await axiosInstance.get("/messages/users");
+      set({ users: res.data });
+    } catch {
+      toast.error("Failed to load users");
+    } finally {
+      set({ isUsersLoading: false });
+    }
+  },
 
-    loadMessages: async (userId, cursor = null) => {
-        const { isLoadingMore, isMessagesLoading } = get();
-        const isInitial = !cursor;
+  loadMessages: async (userId, cursor = null) => {
+    const { isLoadingMore, isMessagesLoading } = get();
+    const isInitial = !cursor;
 
-        if (isInitial && isMessagesLoading) return;
-        if (!isInitial && isLoadingMore) return;
+    if (isInitial && isMessagesLoading) return;
+    if (!isInitial && isLoadingMore) return;
 
-        isInitial
-            ? set({ isMessagesLoading: true })
-            : set({ isLoadingMore: true });
+    isInitial
+      ? set({ isMessagesLoading: true })
+      : set({ isLoadingMore: true });
 
-        try {
-            const res = await axiosInstance.get(`/messages/${userId}`, {
-                params: { cursor, limit: PAGE_SIZE },
-            });
+    try {
+      const res = await axiosInstance.get(`/messages/${userId}`, {
+        params: {
+          cursor: cursor ? JSON.stringify(cursor) : null,
+          limit: PAGE_SIZE,
+        },
+      });
 
-            const { messages: newMessages, hasMore, nextCursor } = res.data;
+      const { messages: newMessages, hasMore, nextCursor } = res.data;
 
-            set((state) => ({
-                messages: isInitial
-                    ? newMessages
-                    : [...newMessages, ...state.messages],
-                hasMore,
-                nextCursor,
-                isMessagesLoading: false,
-                isLoadingMore: false,
-            }));
-        } catch {
-            toast.error("Failed to load messages");
-            set({ isMessagesLoading: false, isLoadingMore: false });
-        }
-    },
+      set((state) => ({
+        messages: isInitial
+          ? newMessages
+          : [...newMessages, ...state.messages],
+        hasMore,
+        nextCursor,
+        isMessagesLoading: false,
+        isLoadingMore: false,
+      }));
+    } catch {
+      toast.error("Failed to load messages");
+      set({ isMessagesLoading: false, isLoadingMore: false });
+    }
+  },
 
-    addOptimisticMessage: (msg) =>
-        set((state) => ({
-            messages: [
-                ...state.messages,
-                {
-                    ...msg,
-                    seen: false,
-                    createdAt: new Date().toISOString(),
-                    optimistic: true,
-                },
-            ],
-        })),
+  addOptimisticMessage: ({ tempId, text, media }) =>
+    set((state) => ({
+      messages: [
+        ...state.messages,
+        {
+          _id: tempId,
+          tempId,
+          text,
+          media,
+          senderId: useAuthStore.getState().authUser._id,
+          seen: false,
+          optimistic: true,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    })),
 
-    replaceOptimisticMessage: (tempId, realMessage) =>
-        set((state) => ({
-            messages: state.messages.map((m) =>
-                m._id === tempId ? realMessage : m
-            ),
-        })),
+  replaceOptimisticMessage: (tempId, realMessage) =>
+    set((state) => ({
+      messages: state.messages.map((m) =>
+        m._id === tempId || m.tempId === tempId ? realMessage : m
+      ),
+    })),
 
-    sendMessage: async ({ tempId, text, media }) => {
-        const { selectedUser } = get();
+  sendMessage: async ({ tempId, text, media }) => {
+    const { selectedUser } = get();
 
-        const res = await axiosInstance.post(
-            `/messages/send/${selectedUser._id}`,
-            { text, media }
-        );
+    try {
+      const res = await axiosInstance.post(
+        `/messages/send/${selectedUser._id}`,
+        { text, media }
+      );
 
-        get().replaceOptimisticMessage(tempId, res.data);
+      get().replaceOptimisticMessage(tempId, res.data);
+      return res.data;
+    } catch (err) {
+      toast.error("Message failed to send");
 
-        return res.data;
-    },
+      set((state) => ({
+        messages: state.messages.filter((m) => m._id !== tempId),
+      }));
 
-    subscribeToMessages: () => {
-        const socket = useAuthStore.getState().socket;
-        if (!socket) return;
+      throw err;
+    }
+  },
 
-        socket.off("newMessage");
-        socket.off("messagesSeen");
+  subscribeToMessages: () => {
+    const socket = useAuthStore.getState().socket;
+    if (!socket) return;
 
-        socket.on("newMessage", (newMessage) => {
-            const { selectedUser, messages } = get();
-            if (
-                !selectedUser ||
-                ![newMessage.senderId, newMessage.receiverId].includes(
-                    selectedUser._id
-                )
-            )
-                return;
+    socket.off("newMessage");
+    socket.off("messagesSeen");
 
-            if (messages.some((m) => m._id === newMessage._id)) return;
+    socket.on("newMessage", (newMessage) => {
+      const { selectedUser, messages } = get();
+      if (
+        !selectedUser ||
+        ![newMessage.senderId, newMessage.receiverId].includes(
+          selectedUser._id
+        )
+      )
+        return;
 
-            set((state) => ({
-                messages: [...state.messages, newMessage],
-            }));
+      if (messages.some((m) => m._id === newMessage._id)) return;
 
-            if (newMessage.senderId === selectedUser._id) {
-                get().markMessagesAsSeen(selectedUser._id);
-            }
-        });
+      set((state) => ({
+        messages: [...state.messages, newMessage],
+      }));
 
-        socket.on("messagesSeen", ({ messageIds, userId }) => {
-            const { selectedUser } = get();
-            if (!selectedUser || userId !== selectedUser._id) return;
+      if (newMessage.senderId === selectedUser._id) {
+        get().markMessagesAsSeen(selectedUser._id);
+      }
+    });
 
-            set((state) => ({
-                messages: state.messages.map((msg) =>
-                    messageIds.includes(msg._id)
-                        ? { ...msg, seen: true }
-                        : msg
-                ),
-            }));
-        });
-    },
+    socket.on("messagesSeen", ({ messageIds, userId }) => {
+      const { selectedUser } = get();
+      if (!selectedUser || userId !== selectedUser._id) return;
 
-    unsubscribeFromMessages: () => {
-        const socket = useAuthStore.getState().socket;
-        socket?.off("newMessage");
-        socket?.off("messagesSeen");
-    },
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          messageIds.includes(msg._id)
+            ? { ...msg, seen: true, seenAt: new Date().toISOString() }
+            : msg
+        ),
+      }));
+    });
+  },
 
-    setSelectedUser: (selectedUser) =>
-        set({
-            selectedUser,
-            messages: [],
-            nextCursor: null,
-            hasMore: true,
-        }),
+  unsubscribeFromMessages: () => {
+    const socket = useAuthStore.getState().socket;
+    socket?.off("newMessage");
+    socket?.off("messagesSeen");
+  },
 
-    markMessagesAsSeen: async (userId) => {
-        try {
-            await axiosInstance.post(`/messages/${userId}/mark-seen`);
-        } catch {}
-    },
+  setSelectedUser: (selectedUser) =>
+    set({
+      selectedUser,
+      messages: [],
+      nextCursor: null,
+      hasMore: true,
+    }),
+
+  markMessagesAsSeen: async (userId) => {
+    try {
+      await axiosInstance.post(`/messages/${userId}/mark-seen`);
+    } catch {}
+  },
 }));
