@@ -1,4 +1,11 @@
 import { useState, useEffect, useRef } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { Loader } from "lucide-react";
+import { Toaster } from "react-hot-toast";
+
+import { useAuthStore } from "./store/useAuthStore";
+import { useThemeStore } from "./store/useThemeStore";
+
 import Navbar from "./components/Navbar";
 import HomePage from "./pages/HomePage";
 import SignUpPage from "./pages/SignUpPage";
@@ -8,11 +15,6 @@ import ForgotPasswordPage from "./pages/ForgetPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
 import CheckEmailPage from "./pages/CheckEmailPage";
-import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuthStore } from "./store/useAuthStore";
-import { useThemeStore } from "./store/useThemeStore";
-import { Loader } from "lucide-react";
-import { Toaster } from "react-hot-toast";
 
 const App = () => {
     const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
@@ -54,7 +56,7 @@ const App = () => {
 
             <Routes>
                 <Route path="/" element={authUser ? <HomePage /> : <Navigate to="/login" />} />
-            
+
                 <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to="/" />} />
                 <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
                 <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
